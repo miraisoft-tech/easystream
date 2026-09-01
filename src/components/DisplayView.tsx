@@ -149,7 +149,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             color: '#ffffff',
             textShadow: '0 4px 15px rgba(0,0,0,0.8)'
           }}>
-            WORSHIP PRESENTER
+            EASY PRESENTER
           </div>
         </div>
       )}

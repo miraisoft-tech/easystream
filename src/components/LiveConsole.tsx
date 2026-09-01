@@ -252,7 +252,7 @@ export const LiveConsole: React.FC<LiveConsoleProps> = ({
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '20px' }}>✝</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f59e0b' }}>WORSHIP PRESENTER</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f59e0b' }}>EASY PRESENTER</span>
             </div>
           ) : state.liveState.isClearText ? (
             <div style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '12px', fontStyle: 'italic' }}>

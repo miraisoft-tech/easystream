@@ -1,5 +1,5 @@
 {
-  "name": "worship-presenter",
+  "name": "easy-presenter",
   "version": "2.0.0",
   "description": "Modern EasyWorship-grade presentation & live broadcast system for church & vMix overlays",
   "main": "server.js",

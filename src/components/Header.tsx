@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Radio size={16} color="#ffffff" />
             </div>
             <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.02em' }}>
-              Worship<span style={{ color: '#38bdf8' }}>Presenter</span>
+              Easy<span style={{ color: '#38bdf8' }}>Presenter</span>
             </span>
           </div>
           <span className="logo-badge">STUDIO PRO</span>
