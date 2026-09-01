@@ -54,9 +54,10 @@ export function useWorshipSync() {
       const hostname = window.location.hostname || 'localhost';
       const port = window.location.port;
 
-      // If running on Vite dev server (e.g. port 5173), connect directly to backend port 3000
+      // If running on Vite dev server (e.g. port 5173), connect to backend port (default 3000, or VITE_BACKEND_PORT)
       if (import.meta.env.DEV && port === '5173') {
-        return `${wsProtocol}//${hostname}:3000/ws`;
+        const backendPort = import.meta.env.VITE_BACKEND_PORT || '3000';
+        return `${wsProtocol}//${hostname}:${backendPort}/ws`;
       }
       return `${wsProtocol}//${window.location.host}/ws`;
     }
