@@ -1,6 +1,6 @@
-# Deploying WorshipPresenter Studio on Coolify
+# Deploying EasyPresenter Studio on Coolify
 
-This guide explains how to deploy **WorshipPresenter Studio** to [Coolify](https://coolify.io/) using **Nixpacks** (recommended), **Dockerfile**, or **Docker Compose**.
+This guide explains how to deploy **EasyPresenter Studio** to [Coolify](https://coolify.io/) using **Nixpacks** (recommended), **Dockerfile**, or **Docker Compose**.
 
 ---
 
@@ -51,14 +51,14 @@ Nixpacks builds a fast, lightweight container automatically from your source tre
 
 ## 💾 Persistent Storage (Important!)
 
-WorshipPresenter saves songs, themes, service schedules, and presentation settings to `/app/data/store.json`.
+EasyPresenter saves songs, themes, service schedules, and presentation settings to `/app/data/store.json`.
 
 To make sure your data is never lost when the container updates or redeploys:
 
 1. In Coolify, open your application settings.
 2. Go to the **Storages** tab.
 3. Click **Add Storage / Persistent Volume**:
-   - **Volume Name**: `worshippresenter_data` (or any name)
+   - **Volume Name**: `EasyPresenter_data` (or any name)
    - **Destination Path**: `/app/data`
 4. Click **Save** and redeploy the container.
 
@@ -70,12 +70,12 @@ To make sure your data is never lost when the container updates or redeploys:
 
 You can configure these in Coolify's **Environment Variables** tab:
 
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `PORT` | `3000` | Port the HTTP and WebSocket server listens on inside the container |
-| `NODE_ENV` | `production` | Node.js production mode |
-| `DATA_DIR` | `/app/data` | Custom directory path for library and state storage (defaults to `./data`) |
-| `NIXPACKS_NODE_VERSION` | `22` | Node.js version used by Nixpacks |
+| Variable                | Default      | Description                                                                |
+| :---------------------- | :----------- | :------------------------------------------------------------------------- |
+| `PORT`                  | `3000`       | Port the HTTP and WebSocket server listens on inside the container         |
+| `NODE_ENV`              | `production` | Node.js production mode                                                    |
+| `DATA_DIR`              | `/app/data`  | Custom directory path for library and state storage (defaults to `./data`) |
+| `NIXPACKS_NODE_VERSION` | `22`         | Node.js version used by Nixpacks                                           |
 
 ---
 

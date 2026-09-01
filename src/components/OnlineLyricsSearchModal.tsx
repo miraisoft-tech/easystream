@@ -66,7 +66,8 @@ export const OnlineLyricsSearchModal: React.FC<OnlineLyricsSearchModalProps> = (
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/lyrics/search?q=${encodeURIComponent(query.trim())}`);
+        const apiBase = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${apiBase}/api/lyrics/search?q=${encodeURIComponent(query.trim())}`);
         const data = await res.json();
         const songs: OnlineSongResult[] = data.results || [];
         setResults(songs);

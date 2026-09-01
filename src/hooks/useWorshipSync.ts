@@ -46,6 +46,9 @@ export function useWorshipSync() {
     let unmounted = false;
 
     function getWsUrl() {
+      if (import.meta.env.VITE_WS_URL) {
+        return import.meta.env.VITE_WS_URL;
+      }
       const isHttps = window.location.protocol === 'https:';
       const wsProtocol = isHttps ? 'wss:' : 'ws:';
       const hostname = window.location.hostname || 'localhost';
