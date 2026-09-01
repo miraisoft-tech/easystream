@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STORE_PATH = path.join(DATA_DIR, 'store.json');
 const DIST_DIR = path.join(__dirname, 'dist');
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -452,6 +452,13 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   let pathname = parsedUrl.pathname;
   
+  // Health check endpoint for Coolify / Docker
+  if (pathname === '/health' || pathname === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+    return;
+  }
+
   // REST API Endpoints
   if (pathname === '/api/state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -670,3 +677,41 @@ server.listen(PORT, '0.0.0.0', () => {
   }
   console.log('----------------------------------------------------');
 });
+
+// Graceful shutdown handling for Docker / Coolify restarts
+function flushStoreSync() {
+  clearTimeout(saveDebounceTimer);
+  try {
+    const toSave = {
+      title: state.title,
+      subtitle: state.subtitle,
+      category: state.category,
+      lines: state.lines,
+      wpm: state.wpm,
+      theme: state.theme,
+      currentScheduleId: state.currentScheduleId,
+      schedule: state.schedule,
+      savedSchedules: state.savedSchedules,
+      library: state.library,
+    };
+    fs.writeFileSync(STORE_PATH, JSON.stringify(toSave, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to flush store to disk on shutdown:', err);
+  }
+}
+
+const gracefulShutdown = (signal) => {
+  console.log(`\nReceived ${signal}, shutting down gracefully...`);
+  flushStoreSync();
+  wss.close(() => {
+    server.close(() => {
+      console.log('Server and WebSocket connections closed.');
+      process.exit(0);
+    });
+  });
+  // Force exit after 5 seconds if connections linger
+  setTimeout(() => process.exit(0), 5000).unref();
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

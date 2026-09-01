@@ -17,6 +17,17 @@ npm run serve
 # npm start    (Node server)
 ```
 
+### 📦 Nixpacks, Coolify & Docker Deployment
+To deploy with **Coolify** (Nixpacks or Dockerfile):
+- Select **Nixpacks** as Build Pack in **Coolify** (uses included [`nixpacks.toml`](./nixpacks.toml)).
+- Set port `3000` and persistent volume `/app/data`.
+- Or run locally with Docker:
+  ```bash
+  docker compose up -d --build
+  ```
+- See [COOLIFY.md](./COOLIFY.md) for full deployment instructions (Nixpacks, Dockerfile, Docker Compose).
+
+
 You'll see:
 ```text
 ----------------------------------------------------
