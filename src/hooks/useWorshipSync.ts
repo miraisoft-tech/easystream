@@ -1,0 +1,229 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { AppState, WebSocketClientMessage, WebSocketServerMessage, PresentationTheme, LiveState, Schedule, ScheduleItem, LibraryItem } from '../types';
+import { DEFAULT_THEME, DEFAULT_LIBRARY_ITEMS, DEFAULT_SCHEDULES } from '../data/defaults';
+
+const INITIAL_STATE: AppState = {
+  title: 'Psalm 23',
+  subtitle: 'Scripture Reading',
+  category: 'scripture',
+  lines: DEFAULT_LIBRARY_ITEMS[0].lines,
+  cur: 0,
+  playing: false,
+  wpm: 130,
+  lineStartedAt: null,
+  lineDurationMs: null,
+  liveState: {
+    isBlackout: false,
+    isClearText: false,
+    isLogo: false,
+    isFrozen: false,
+    quickAlert: null,
+  },
+  theme: DEFAULT_THEME,
+  currentScheduleId: 'sunday-morning-worship',
+  activeScheduleIndex: 0,
+  schedule: DEFAULT_SCHEDULES[0].items,
+  savedSchedules: DEFAULT_SCHEDULES,
+  library: DEFAULT_LIBRARY_ITEMS,
+};
+
+export function useWorshipSync() {
+  const [state, setState] = useState<AppState>(INITIAL_STATE);
+  const [isConnected, setIsConnected] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Send message over WebSocket
+  const send = useCallback((msg: WebSocketClientMessage) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(msg));
+    }
+  }, []);
+
+  // Connect WebSocket
+  useEffect(() => {
+    let unmounted = false;
+
+    function getWsUrl() {
+      const isHttps = window.location.protocol === 'https:';
+      const wsProtocol = isHttps ? 'wss:' : 'ws:';
+      const hostname = window.location.hostname || 'localhost';
+      const port = window.location.port;
+
+      // If running on Vite dev server (e.g. port 5173), connect directly to backend port 3000
+      if (port === '5173' || (port && port !== '3000')) {
+        return `${wsProtocol}//${hostname}:3000/ws`;
+      }
+      return `${wsProtocol}//${window.location.host}/ws`;
+    }
+
+    function connect() {
+      if (unmounted) return;
+      const url = getWsUrl();
+
+      try {
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          if (unmounted) return;
+          setIsConnected(true);
+          console.log(`[WorshipSync] Connected to presentation server at ${url}`);
+        };
+
+        ws.onmessage = (event) => {
+          if (unmounted) return;
+          try {
+            const data: WebSocketServerMessage = JSON.parse(event.data);
+            if (data.type === 'state') {
+              setState(data.state);
+            }
+          } catch (e) {
+            console.error('[WorshipSync] Failed to parse message:', e);
+          }
+        };
+
+        ws.onclose = () => {
+          if (unmounted) return;
+          setIsConnected(false);
+          reconnectTimeoutRef.current = setTimeout(connect, 1500);
+        };
+
+        ws.onerror = () => {
+          ws.close();
+        };
+      } catch (err) {
+        console.error('[WorshipSync] Connection error:', err);
+        reconnectTimeoutRef.current = setTimeout(connect, 2000);
+      }
+    }
+
+    connect();
+
+    return () => {
+      unmounted = true;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
+
+  // Progress animation frame loop for smooth timer bar
+  useEffect(() => {
+    let animId: number;
+
+    const tick = () => {
+      if (state.playing && state.lineStartedAt && state.lineDurationMs) {
+        const now = Date.now();
+        const p = Math.min(1, Math.max(0, (now - state.lineStartedAt) / state.lineDurationMs));
+        setProgress(p);
+      } else {
+        if (!state.playing) {
+          if (state.cur === state.lines.length - 1 && !state.lineStartedAt) {
+            setProgress(1);
+          } else {
+            setProgress(0);
+          }
+        }
+      }
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [state.playing, state.lineStartedAt, state.lineDurationMs, state.cur, state.lines.length]);
+
+  // Convenience Action Helpers
+  const jumpTo = useCallback((index: number) => {
+    send({ type: 'jump', index });
+  }, [send]);
+
+  const togglePlay = useCallback(() => {
+    if (state.playing) {
+      send({ type: 'pause' });
+    } else {
+      send({ type: 'play' });
+    }
+  }, [state.playing, send]);
+
+  const restart = useCallback(() => {
+    send({ type: 'restart' });
+  }, [send]);
+
+  const setWpm = useCallback((wpm: number) => {
+    send({ type: 'setWpm', wpm });
+  }, [send]);
+
+  const setLines = useCallback((title: string, subtitle: string, lines: string[], category?: AppState['category']) => {
+    send({ type: 'setLines', title, subtitle, lines, category });
+  }, [send]);
+
+  const updateTheme = useCallback((themeUpdate: Partial<PresentationTheme>) => {
+    send({ type: 'setTheme', theme: themeUpdate });
+  }, [send]);
+
+  const updateLiveState = useCallback((liveStateUpdate: Partial<LiveState>) => {
+    send({ type: 'setLiveState', liveState: liveStateUpdate });
+  }, [send]);
+
+  const setQuickAlert = useCallback((text: string | null) => {
+    send({ type: 'setQuickAlert', text });
+  }, [send]);
+
+  const loadScheduleItem = useCallback((index: number) => {
+    send({ type: 'loadScheduleItem', index });
+  }, [send]);
+
+  const updateSchedule = useCallback((items: ScheduleItem[]) => {
+    send({ type: 'updateSchedule', items });
+  }, [send]);
+
+  const saveSchedule = useCallback((schedule: Schedule) => {
+    send({ type: 'saveSchedule', schedule });
+  }, [send]);
+
+  const loadSchedule = useCallback((scheduleId: string) => {
+    send({ type: 'loadSchedule', scheduleId });
+  }, [send]);
+
+  const deleteSchedule = useCallback((scheduleId: string) => {
+    send({ type: 'deleteSchedule', scheduleId });
+  }, [send]);
+
+  const saveLibraryItem = useCallback((item: LibraryItem) => {
+    send({ type: 'saveLibraryItem', item });
+  }, [send]);
+
+  const deleteLibraryItem = useCallback((id: string) => {
+    send({ type: 'deleteLibraryItem', id });
+  }, [send]);
+
+  const resetToDefault = useCallback(() => {
+    send({ type: 'resetToDefault' });
+  }, [send]);
+
+  return {
+    state,
+    isConnected,
+    progress,
+    send,
+    jumpTo,
+    togglePlay,
+    restart,
+    setWpm,
+    setLines,
+    updateTheme,
+    updateLiveState,
+    setQuickAlert,
+    loadScheduleItem,
+    updateSchedule,
+    saveSchedule,
+    loadSchedule,
+    deleteSchedule,
+    saveLibraryItem,
+    deleteLibraryItem,
+    resetToDefault,
+  };
+}

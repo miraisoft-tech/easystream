@@ -1,0 +1,280 @@
+{
+  "title": "God Is Good All The Time",
+  "subtitle": "Don Moen",
+  "category": "song",
+  "lines": [
+    "God is good (all the time)\nAnd all the time (God is good)\nGod is good (all the time)",
+    "And all the time (God is good)\nGod is good all the time\nHe put a song of praise in this heart of mine",
+    "God is good, yes He is, all the time\nThrough the darkest night, His light will shine\nGod is good, yes he is, God is good",
+    "All the time, here we go!\nGod is good all the time\nHe put a song of praise in this heart of mine",
+    "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, yes, God is good all the time",
+    "That's right, listen\nIf you're walking through the valley\nAnd there are shadows all around",
+    "Do not fear, He will guide you\nHe will keep you safe and sound\nHe has promised to never leave you",
+    "Or forsake you, and His word is true\nGod is good all the time\nHe put a song of praise in the heart of mine",
+    "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is",
+    "Listen\nWe were sinners and so unworthy\nStill for us He chose to die",
+    "Filled us with His Holy Spirit\nNow we can stand and testify\nThat His love is everlasting",
+    "And His mercies, they will never end\nGod is good all the time\nHe put a song of praise in this heart of mine",
+    "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is",
+    "Though I may not understand\nAll the plans you have for me\nMy life is in your hands",
+    "And through the eyes of faith I can clearly see\nThat God is good all the time\nHe put a song of praise in this heart of mine",
+    "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time",
+    "God is good all the time\nHe put a song of praise in the heart of mine\nGod is good all the time",
+    "Through the darkest night, His light will shine\nGod is good, God is good\nGod is good, He's so good, He's so good",
+    "God is good\nHe's so good, help me out!\nAll the time",
+    "Yes He is!\nGod is good (all the time)\nAnd all the time (God is good)",
+    "God is good (all the time)\nAnd all the time (God is good)"
+  ],
+  "wpm": 135,
+  "theme": {
+    "fontFamily": "Montserrat, sans-serif",
+    "fontSize": 44,
+    "fontWeight": 700,
+    "fontStyle": "normal",
+    "textTransform": "none",
+    "textColor": "#ffffff",
+    "accentColor": "#f59e0b",
+    "textAlign": "center",
+    "verticalAlign": "center",
+    "lineHeight": 1.45,
+    "letterSpacing": 0.5,
+    "textShadow": true,
+    "shadowBlur": 14,
+    "shadowColor": "rgba(0, 0, 0, 0.85)",
+    "shadowOffsetX": 0,
+    "shadowOffsetY": 3,
+    "textOutline": true,
+    "outlineWidth": 2,
+    "outlineColor": "rgba(0, 0, 0, 0.95)",
+    "bgType": "animated-gradient",
+    "bgColor": "#0f172a",
+    "bgGradient": "linear-gradient(135deg, #090e17 0%, #1e1b4b 50%, #311042 100%)",
+    "bgAnimationSpeed": 18,
+    "bgOverlayOpacity": 0.25,
+    "displayMode": "fullscreen",
+    "showNextPreview": true,
+    "showProgressBar": true,
+    "showReferenceBadge": true
+  },
+  "currentScheduleId": "sunday-morning-worship",
+  "schedule": [
+    {
+      "id": "item-1",
+      "libraryItemId": "psalm-23",
+      "title": "Opening Scripture: Psalm 23",
+      "category": "scripture",
+      "lines": [
+        "The LORD is my shepherd; I shall not want.",
+        "He makes me lie down in green pastures.",
+        "He leads me beside still waters.",
+        "He restores my soul.",
+        "He leads me in paths of righteousness for his name's sake.",
+        "Even though I walk through the valley of the shadow of death,",
+        "I will fear no evil, for you are with me;",
+        "your rod and your staff, they comfort me.",
+        "You prepare a table before me in the presence of my enemies;",
+        "you anoint my head with oil; my cup overflows.",
+        "Surely goodness and mercy shall follow me all the days of my life,",
+        "and I shall dwell in the house of the LORD forever."
+      ]
+    },
+    {
+      "id": "item-2",
+      "libraryItemId": "amazing-grace",
+      "title": "Hymn: Amazing Grace",
+      "category": "hymn",
+      "lines": [
+        "Amazing grace! how sweet the sound\nThat saved a wretch like me!",
+        "I once was lost, but now am found,\nWas blind, but now I see.",
+        "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;",
+        "How precious did that grace appear\nThe hour I first believed!",
+        "Through many dangers, toils and snares,\nI have already come;",
+        "'Tis grace hath brought me safe thus far,\nAnd grace will lead me home.",
+        "When we've been there ten thousand years,\nBright shining as the sun,",
+        "We've no less days to sing God's praise\nThan when we'd first begun."
+      ]
+    },
+    {
+      "id": "item-3",
+      "libraryItemId": "way-maker",
+      "title": "Praise: Way Maker",
+      "category": "song",
+      "lines": [
+        "You are here, moving in our midst\nI worship You, I worship You",
+        "You are here, working in this place\nI worship You, I worship You",
+        "Way Maker, Miracle Worker, Promise Keeper\nLight in the darkness, my God, that is who You are!",
+        "You are here, touching every heart\nI worship You, I worship You",
+        "You are here, healing every heart\nI worship You, I worship You",
+        "Even when I don't see it, You're working\nEven when I don't feel it, You're working\nYou never stop, You never stop working!"
+      ]
+    }
+  ],
+  "savedSchedules": [
+    {
+      "id": "sunday-morning-worship",
+      "name": "Sunday Morning Service Set",
+      "items": [
+        {
+          "id": "item-1",
+          "libraryItemId": "psalm-23",
+          "title": "Opening Scripture: Psalm 23",
+          "category": "scripture",
+          "lines": [
+            "The LORD is my shepherd; I shall not want.",
+            "He makes me lie down in green pastures.",
+            "He leads me beside still waters.",
+            "He restores my soul.",
+            "He leads me in paths of righteousness for his name's sake.",
+            "Even though I walk through the valley of the shadow of death,",
+            "I will fear no evil, for you are with me;",
+            "your rod and your staff, they comfort me.",
+            "You prepare a table before me in the presence of my enemies;",
+            "you anoint my head with oil; my cup overflows.",
+            "Surely goodness and mercy shall follow me all the days of my life,",
+            "and I shall dwell in the house of the LORD forever."
+          ]
+        },
+        {
+          "id": "item-2",
+          "libraryItemId": "amazing-grace",
+          "title": "Hymn: Amazing Grace",
+          "category": "hymn",
+          "lines": [
+            "Amazing grace! how sweet the sound\nThat saved a wretch like me!",
+            "I once was lost, but now am found,\nWas blind, but now I see.",
+            "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;",
+            "How precious did that grace appear\nThe hour I first believed!",
+            "Through many dangers, toils and snares,\nI have already come;",
+            "'Tis grace hath brought me safe thus far,\nAnd grace will lead me home.",
+            "When we've been there ten thousand years,\nBright shining as the sun,",
+            "We've no less days to sing God's praise\nThan when we'd first begun."
+          ]
+        },
+        {
+          "id": "item-3",
+          "libraryItemId": "way-maker",
+          "title": "Praise: Way Maker",
+          "category": "song",
+          "lines": [
+            "You are here, moving in our midst\nI worship You, I worship You",
+            "You are here, working in this place\nI worship You, I worship You",
+            "Way Maker, Miracle Worker, Promise Keeper\nLight in the darkness, my God, that is who You are!",
+            "You are here, touching every heart\nI worship You, I worship You",
+            "You are here, healing every heart\nI worship You, I worship You",
+            "Even when I don't see it, You're working\nEven when I don't feel it, You're working\nYou never stop, You never stop working!"
+          ]
+        }
+      ],
+      "createdAt": 1788151909131,
+      "updatedAt": 1788151909131
+    }
+  ],
+  "library": [
+    {
+      "id": "song-god-is-good-all-the-time-mtgzsolt",
+      "title": "God Is Good All The Time",
+      "author": "Don Moen",
+      "category": "song",
+      "content": "God is good (all the time)\nAnd all the time (God is good)\nGod is good (all the time)\nAnd all the time (God is good)\nGod is good all the time\nHe put a song of praise in this heart of mine\nGod is good, yes He is, all the time\nThrough the darkest night, His light will shine\nGod is good, yes he is, God is good\nAll the time, here we go!\nGod is good all the time\nHe put a song of praise in this heart of mine\nGod is good all the time\nThrough the darkest night, His light will shine\nGod is good, yes, God is good all the time\nThat's right, listen\nIf you're walking through the valley\nAnd there are shadows all around\nDo not fear, He will guide you\nHe will keep you safe and sound\nHe has promised to never leave you\nOr forsake you, and His word is true\nGod is good all the time\nHe put a song of praise in the heart of mine\nGod is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is\nListen\nWe were sinners and so unworthy\nStill for us He chose to die\nFilled us with His Holy Spirit\nNow we can stand and testify\nThat His love is everlasting\nAnd His mercies, they will never end\nGod is good all the time\nHe put a song of praise in this heart of mine\nGod is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is\nThough I may not understand\nAll the plans you have for me\nMy life is in your hands\nAnd through the eyes of faith I can clearly see\nThat God is good all the time\nHe put a song of praise in this heart of mine\nGod is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time\nGod is good all the time\nHe put a song of praise in the heart of mine\nGod is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good\nGod is good, He's so good, He's so good\nGod is good\nHe's so good, help me out!\nAll the time\nYes He is!\nGod is good (all the time)\nAnd all the time (God is good)\nGod is good (all the time)\nAnd all the time (God is good)",
+      "lines": [
+        "God is good (all the time)\nAnd all the time (God is good)\nGod is good (all the time)",
+        "And all the time (God is good)\nGod is good all the time\nHe put a song of praise in this heart of mine",
+        "God is good, yes He is, all the time\nThrough the darkest night, His light will shine\nGod is good, yes he is, God is good",
+        "All the time, here we go!\nGod is good all the time\nHe put a song of praise in this heart of mine",
+        "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, yes, God is good all the time",
+        "That's right, listen\nIf you're walking through the valley\nAnd there are shadows all around",
+        "Do not fear, He will guide you\nHe will keep you safe and sound\nHe has promised to never leave you",
+        "Or forsake you, and His word is true\nGod is good all the time\nHe put a song of praise in the heart of mine",
+        "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is",
+        "Listen\nWe were sinners and so unworthy\nStill for us He chose to die",
+        "Filled us with His Holy Spirit\nNow we can stand and testify\nThat His love is everlasting",
+        "And His mercies, they will never end\nGod is good all the time\nHe put a song of praise in this heart of mine",
+        "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time, yes He is",
+        "Though I may not understand\nAll the plans you have for me\nMy life is in your hands",
+        "And through the eyes of faith I can clearly see\nThat God is good all the time\nHe put a song of praise in this heart of mine",
+        "God is good all the time\nThrough the darkest night, His light will shine\nGod is good, God is good all the time",
+        "God is good all the time\nHe put a song of praise in the heart of mine\nGod is good all the time",
+        "Through the darkest night, His light will shine\nGod is good, God is good\nGod is good, He's so good, He's so good",
+        "God is good\nHe's so good, help me out!\nAll the time",
+        "Yes He is!\nGod is good (all the time)\nAnd all the time (God is good)",
+        "God is good (all the time)\nAnd all the time (God is good)"
+      ],
+      "createdAt": 1788165881489,
+      "updatedAt": 1788165881489
+    },
+    {
+      "id": "psalm-23",
+      "title": "Psalm 23",
+      "category": "scripture",
+      "author": "King David",
+      "content": "The LORD is my shepherd; I shall not want.\nHe makes me lie down in green pastures.\nHe leads me beside still waters.\nHe restores my soul.\nHe leads me in paths of righteousness for his name's sake.\nEven though I walk through the valley of the shadow of death,\nI will fear no evil, for you are with me;\nyour rod and your staff, they comfort me.\nYou prepare a table before me in the presence of my enemies;\nyou anoint my head with oil; my cup overflows.\nSurely goodness and mercy shall follow me all the days of my life,\nand I shall dwell in the house of the LORD forever.",
+      "lines": [
+        "The LORD is my shepherd; I shall not want.",
+        "He makes me lie down in green pastures.",
+        "He leads me beside still waters.",
+        "He restores my soul.",
+        "He leads me in paths of righteousness for his name's sake.",
+        "Even though I walk through the valley of the shadow of death,",
+        "I will fear no evil, for you are with me;",
+        "your rod and your staff, they comfort me.",
+        "You prepare a table before me in the presence of my enemies;",
+        "you anoint my head with oil; my cup overflows.",
+        "Surely goodness and mercy shall follow me all the days of my life,",
+        "and I shall dwell in the house of the LORD forever."
+      ],
+      "createdAt": 1788152009131,
+      "updatedAt": 1788152009131
+    },
+    {
+      "id": "amazing-grace",
+      "title": "Amazing Grace",
+      "category": "hymn",
+      "author": "John Newton",
+      "content": "Amazing grace! how sweet the sound\nThat saved a wretch like me!\nI once was lost, but now am found,\nWas blind, but now I see.\n\n'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed!\n\nThrough many dangers, toils and snares,\nI have already come;\n'Tis grace hath brought me safe thus far,\nAnd grace will lead me home.\n\nWhen we've been there ten thousand years,\nBright shining as the sun,\nWe've no less days to sing God's praise\nThan when we'd first begun.",
+      "lines": [
+        "Amazing grace! how sweet the sound\nThat saved a wretch like me!",
+        "I once was lost, but now am found,\nWas blind, but now I see.",
+        "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;",
+        "How precious did that grace appear\nThe hour I first believed!",
+        "Through many dangers, toils and snares,\nI have already come;",
+        "'Tis grace hath brought me safe thus far,\nAnd grace will lead me home.",
+        "When we've been there ten thousand years,\nBright shining as the sun,",
+        "We've no less days to sing God's praise\nThan when we'd first begun."
+      ],
+      "createdAt": 1788152019131,
+      "updatedAt": 1788152019131
+    },
+    {
+      "id": "way-maker",
+      "title": "Way Maker",
+      "category": "song",
+      "author": "Sinach",
+      "content": "You are here, moving in our midst\nI worship You, I worship You\nYou are here, working in this place\nI worship You, I worship You\n\n(Chorus)\nWay Maker, Miracle Worker, Promise Keeper\nLight in the darkness, my God, that is who You are!\n\nYou are here, touching every heart\nI worship You, I worship You\nYou are here, healing every heart\nI worship You, I worship You\n\nEven when I don't see it, You're working\nEven when I don't feel it, You're working\nYou never stop, You never stop working!",
+      "lines": [
+        "You are here, moving in our midst\nI worship You, I worship You",
+        "You are here, working in this place\nI worship You, I worship You",
+        "Way Maker, Miracle Worker, Promise Keeper\nLight in the darkness, my God, that is who You are!",
+        "You are here, touching every heart\nI worship You, I worship You",
+        "You are here, healing every heart\nI worship You, I worship You",
+        "Even when I don't see it, You're working\nEven when I don't feel it, You're working\nYou never stop, You never stop working!"
+      ],
+      "createdAt": 1788152029131,
+      "updatedAt": 1788152029131
+    },
+    {
+      "id": "john-3-16",
+      "title": "John 3:16-17",
+      "category": "scripture",
+      "author": "Apostle John",
+      "content": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n\nFor God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
+      "lines": [
+        "For God so loved the world, that he gave his only begotten Son,",
+        "that whosoever believeth in him should not perish, but have everlasting life.",
+        "For God sent not his Son into the world to condemn the world;",
+        "but that the world through him might be saved."
+      ],
+      "createdAt": 1788152039131,
+      "updatedAt": 1788152039131
+    }
+  ]
+}
