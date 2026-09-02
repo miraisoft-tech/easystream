@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Tv, 
   Layers, 
@@ -12,31 +12,55 @@ import {
   Radio,
   Image as ImageIcon,
   Search,
-  Globe
+  Globe,
+  Clock
 } from 'lucide-react';
-import { LiveState } from '../types';
+import { LiveState, TimerState } from '../types';
 
 interface HeaderProps {
   isConnected: boolean;
   liveState: LiveState;
+  timerState: TimerState;
   onUpdateLiveState: (update: Partial<LiveState>) => void;
   onSetQuickAlert: (text: string | null) => void;
   onOpenLibrary: () => void;
   onOpenOnlineSearch: () => void;
+  onOpenTimer: () => void;
   onResetToDefault: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   isConnected,
   liveState,
+  timerState,
   onUpdateLiveState,
   onSetQuickAlert,
   onOpenLibrary,
   onOpenOnlineSearch,
+  onOpenTimer,
   onResetToDefault,
 }) => {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertText, setAlertText] = useState(liveState.quickAlert || '');
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (timerState.status === 'running') {
+      const interval = setInterval(() => setNow(Date.now()), 500);
+      return () => clearInterval(interval);
+    }
+  }, [timerState.status]);
+
+  let headerTimerSec = timerState.remainingSec;
+  if (timerState.status === 'running' && timerState.targetEndTime) {
+    headerTimerSec = Math.floor((timerState.targetEndTime - now) / 1000);
+  }
+  const isOvertime = headerTimerSec < 0;
+  const absSec = Math.abs(headerTimerSec);
+  const mins = Math.floor(absSec / 60);
+  const secs = absSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const timerBadgeStr = `${isOvertime ? '-' : ''}${pad(mins)}:${pad(secs)}`;
 
   const toggleBlackout = () => {
     onUpdateLiveState({ isBlackout: !liveState.isBlackout });
@@ -150,6 +174,41 @@ export const Header: React.FC<HeaderProps> = ({
           <Bell size={13} />
           {liveState.quickAlert ? 'ALERT ACTIVE' : 'TICKER ALERT'}
         </button>
+
+        {/* Live Countdown & Overtime Timer Quick Button */}
+        <button
+          className="btn"
+          style={{
+            background: isOvertime
+              ? '#ef4444'
+              : timerState.status === 'running'
+                ? 'rgba(16, 185, 129, 0.2)'
+                : 'rgba(255, 255, 255, 0.06)',
+            borderColor: isOvertime
+              ? '#ef4444'
+              : timerState.status === 'running'
+                ? '#10b981'
+                : 'rgba(255, 255, 255, 0.14)',
+            color: isOvertime ? '#ffffff' : timerState.status === 'running' ? '#34d399' : '#e2e8f0',
+            fontSize: '12px',
+            padding: '6px 12px',
+            fontWeight: 800,
+            gap: '6px',
+            fontVariantNumeric: 'tabular-nums',
+            boxShadow: isOvertime ? '0 0 15px rgba(239, 68, 68, 0.5)' : 'none',
+          }}
+          onClick={onOpenTimer}
+          title="Open Countdown & Overtime Timer Studio"
+        >
+          <Clock size={13} />
+          <span>
+            {isOvertime
+              ? `TIME UP (${timerBadgeStr})`
+              : timerState.status === 'running'
+                ? `TIMER: ${timerBadgeStr}`
+                : `TIMER (${timerBadgeStr})`}
+          </span>
+        </button>
       </div>
 
       {/* Right: Output Windows & Library Drawer */}
@@ -203,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Open vMix / OBS Alpha-channel broadcast overlay"
           >
             <Layers size={13} />
-            vMix Overlay
+            vMix
             <ExternalLink size={11} style={{ opacity: 0.6 }} />
           </a>
 
@@ -217,6 +276,19 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Mic2 size={13} />
             Stage
+            <ExternalLink size={11} style={{ opacity: 0.6 }} />
+          </a>
+
+          <a
+            href="/timer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn"
+            style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none', background: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8' }}
+            title="Open Countdown & Overtime Display in a new tab"
+          >
+            <Clock size={13} />
+            Timer
             <ExternalLink size={11} style={{ opacity: 0.6 }} />
           </a>
         </div>

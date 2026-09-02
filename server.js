@@ -206,6 +206,20 @@ const DEFAULT_SCHEDULES = [
   },
 ];
 
+const DEFAULT_TIMER_STATE = {
+  status: "idle",
+  durationSec: 3600, // 60 minutes default
+  remainingSec: 3600,
+  startedAt: null,
+  targetEndTime: null,
+  allowOvertime: true,
+  warningThresholdSec: 300, // 5 min
+  criticalThresholdSec: 60, // 1 min
+  title: "Service Countdown",
+  promptMessage: null,
+  promptVisible: false,
+};
+
 function loadSavedStore() {
   try {
     if (fs.existsSync(STORE_PATH)) {
@@ -240,6 +254,10 @@ let state = {
     quickAlert: null,
   },
 
+  timerState: saved?.timerState
+    ? { ...DEFAULT_TIMER_STATE, ...saved.timerState, status: "idle", startedAt: null, targetEndTime: null }
+    : { ...DEFAULT_TIMER_STATE },
+
   theme: saved?.theme
     ? { ...DEFAULT_THEME, ...saved.theme }
     : { ...DEFAULT_THEME },
@@ -266,6 +284,12 @@ function saveStoreToDisk() {
         lines: state.lines,
         wpm: state.wpm,
         theme: state.theme,
+        timerState: {
+          ...state.timerState,
+          status: "idle",
+          startedAt: null,
+          targetEndTime: null,
+        },
         currentScheduleId: state.currentScheduleId,
         schedule: state.schedule,
         savedSchedules: state.savedSchedules,
@@ -441,6 +465,70 @@ function saveLibraryItem(item) {
 
 function deleteLibraryItem(id) {
   state.library = state.library.filter((i) => i.id !== id);
+  saveStoreToDisk();
+}
+
+function startTimer(durationSec, title) {
+  if (title && typeof title === "string") {
+    state.timerState.title = title.trim();
+  }
+  if (typeof durationSec === "number" && durationSec > 0) {
+    state.timerState.durationSec = Math.round(durationSec);
+    state.timerState.remainingSec = Math.round(durationSec);
+  } else if (state.timerState.status === "idle" || !state.timerState.remainingSec) {
+    state.timerState.remainingSec = state.timerState.durationSec;
+  }
+  const remaining = state.timerState.remainingSec;
+  state.timerState.startedAt = Date.now();
+  state.timerState.targetEndTime = Date.now() + remaining * 1000;
+  state.timerState.status = "running";
+  saveStoreToDisk();
+}
+
+function pauseTimer() {
+  if (state.timerState.status === "running" && state.timerState.targetEndTime) {
+    const diffSec = Math.round((state.timerState.targetEndTime - Date.now()) / 1000);
+    state.timerState.remainingSec = diffSec;
+    state.timerState.status = "paused";
+    state.timerState.targetEndTime = null;
+    state.timerState.startedAt = null;
+    saveStoreToDisk();
+  }
+}
+
+function resetTimer() {
+  state.timerState.remainingSec = state.timerState.durationSec;
+  state.timerState.status = "idle";
+  state.timerState.startedAt = null;
+  state.timerState.targetEndTime = null;
+  saveStoreToDisk();
+}
+
+function adjustTimer(deltaSec) {
+  const delta = Number(deltaSec);
+  if (!Number.isFinite(delta)) return;
+  if (state.timerState.status === "running" && state.timerState.targetEndTime) {
+    state.timerState.targetEndTime += delta * 1000;
+    state.timerState.remainingSec = Math.round((state.timerState.targetEndTime - Date.now()) / 1000);
+  } else {
+    state.timerState.remainingSec = Math.max(0, (state.timerState.remainingSec || 0) + delta);
+    state.timerState.durationSec = Math.max(0, (state.timerState.durationSec || 0) + delta);
+  }
+  saveStoreToDisk();
+}
+
+function setTimerConfig(config) {
+  if (!config || typeof config !== "object") return;
+  state.timerState = { ...state.timerState, ...config };
+  if (config.durationSec && state.timerState.status === "idle") {
+    state.timerState.remainingSec = config.durationSec;
+  }
+  saveStoreToDisk();
+}
+
+function setTimerPrompt(message, visible) {
+  state.timerState.promptMessage = message && message.trim() ? message.trim() : null;
+  state.timerState.promptVisible = Boolean(visible && state.timerState.promptMessage);
   saveStoreToDisk();
 }
 
@@ -879,6 +967,8 @@ const server = http.createServer((req, res) => {
     pathname = "/index.html";
   } else if (pathname === "/stage.html" || pathname === "/stage") {
     pathname = "/index.html";
+  } else if (pathname === "/timer.html" || pathname === "/timer" || pathname === "/countdown.html" || pathname === "/countdown") {
+    pathname = "/index.html";
   } else if (pathname === "/") {
     pathname = "/index.html";
   }
@@ -970,6 +1060,24 @@ wss.on("connection", (ws) => {
       case "setQuickAlert":
         setQuickAlert(msg.text);
         break;
+      case "startTimer":
+        startTimer(msg.durationSec, msg.title);
+        break;
+      case "pauseTimer":
+        pauseTimer();
+        break;
+      case "resetTimer":
+        resetTimer();
+        break;
+      case "adjustTimer":
+        adjustTimer(msg.deltaSec);
+        break;
+      case "setTimerConfig":
+        setTimerConfig(msg.config);
+        break;
+      case "setTimerPrompt":
+        setTimerPrompt(msg.message, msg.visible);
+        break;
       case "loadScheduleItem":
         loadScheduleItem(msg.index);
         break;
@@ -999,6 +1107,7 @@ wss.on("connection", (ws) => {
         state.schedule = DEFAULT_SCHEDULES[0].items;
         state.currentScheduleId = DEFAULT_SCHEDULES[0].id;
         state.activeScheduleIndex = 0;
+        state.timerState = { ...DEFAULT_TIMER_STATE };
         loadScheduleItem(0);
         saveStoreToDisk();
         break;
@@ -1026,6 +1135,10 @@ server.listen(PORT, "0.0.0.0", () => {
     `  🎬 Local vMix Ovly:  http://localhost:${PORT}/display?overlay=1`,
   );
   console.log(`  🎙️  Stage Monitor:   http://localhost:${PORT}/stage`);
+  console.log(`  ⏱️  Timer Display:   http://localhost:${PORT}/timer`);
+  console.log(
+    `  ⏱️  vMix Timer Ovly: http://localhost:${PORT}/timer?overlay=1`,
+  );
   console.log("");
   if (ips.length > 0) {
     console.log("  🌐 Network LAN URLs (for vMix or remote iPads/PCs):");
@@ -1035,6 +1148,10 @@ server.listen(PORT, "0.0.0.0", () => {
         `     • vMix Overlay:   http://${ip}:${PORT}/display?overlay=1`,
       );
       console.log(`     • Projector Screen: http://${ip}:${PORT}/display`);
+      console.log(`     • Timer Display:  http://${ip}:${PORT}/timer`);
+      console.log(
+        `     • Timer Overlay:  http://${ip}:${PORT}/timer?overlay=1`,
+      );
     });
   }
   console.log("----------------------------------------------------");
@@ -1051,6 +1168,12 @@ function flushStoreSync() {
       lines: state.lines,
       wpm: state.wpm,
       theme: state.theme,
+      timerState: {
+        ...state.timerState,
+        status: "idle",
+        startedAt: null,
+        targetEndTime: null,
+      },
       currentScheduleId: state.currentScheduleId,
       schedule: state.schedule,
       savedSchedules: state.savedSchedules,

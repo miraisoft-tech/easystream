@@ -80,6 +80,20 @@ export interface LiveState {
   quickAlert: string | null;
 }
 
+export interface TimerState {
+  status: 'idle' | 'running' | 'paused';
+  durationSec: number;        // Configured countdown duration in seconds (e.g. 3600 for 60 min)
+  remainingSec: number;       // Seconds remaining when idle/paused
+  startedAt: number | null;   // Timestamp when timer was started/resumed
+  targetEndTime: number | null; // Timestamp when countdown reaches 00:00
+  allowOvertime: boolean;     // Enable overtime count-up past 00:00 (default true)
+  warningThresholdSec: number;// Amber warning threshold (default 300s / 5 min)
+  criticalThresholdSec: number;// Orange critical threshold (default 60s / 1 min)
+  title: string;              // e.g. "Sermon Countdown" or "Service Begins In"
+  promptMessage: string | null;// Slide-in message displayed below the display
+  promptVisible: boolean;     // Whether prompt message is visible
+}
+
 export interface AppState {
   title: string;
   subtitle?: string;
@@ -93,6 +107,9 @@ export interface AppState {
   
   // Live control flags
   liveState: LiveState;
+
+  // Live Timer & Countdown State
+  timerState: TimerState;
   
   // Active theme
   theme: PresentationTheme;
@@ -117,6 +134,12 @@ export type WebSocketClientMessage =
   | { type: 'setTheme'; theme: Partial<PresentationTheme> }
   | { type: 'setLiveState'; liveState: Partial<LiveState> }
   | { type: 'setQuickAlert'; text: string | null }
+  | { type: 'startTimer'; durationSec?: number; title?: string }
+  | { type: 'pauseTimer' }
+  | { type: 'resetTimer' }
+  | { type: 'adjustTimer'; deltaSec: number }
+  | { type: 'setTimerConfig'; config: Partial<TimerState> }
+  | { type: 'setTimerPrompt'; message: string | null; visible: boolean }
   | { type: 'loadScheduleItem'; index: number }
   | { type: 'updateSchedule'; items: ScheduleItem[] }
   | { type: 'saveSchedule'; schedule: Schedule }
