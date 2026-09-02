@@ -176,21 +176,14 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           zIndex: 100,
           pointerEvents: 'none',
-<<<<<<< HEAD
           width: 'min(560px, 90vw)',
           maxWidth: '100%',
-=======
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
         }}>
           <div style={{
             background: 'rgba(15, 23, 42, 0.95)',
             border: '2px solid #f59e0b',
             borderRadius: '14px',
-<<<<<<< HEAD
             padding: '12px 20px',
-=======
-            padding: '12px 24px',
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
             color: '#ffffff',
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.4)',
             display: 'flex',
@@ -198,7 +191,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             gap: '12px',
             fontSize: '18px',
             fontWeight: 800,
-<<<<<<< HEAD
             overflow: 'hidden',
           }}>
             <Bell size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
@@ -236,13 +228,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             100% { transform: translateX(-100%); }
           }
         `}</style>
-=======
-          }}>
-            <Bell size={20} color="#f59e0b" />
-            <span>{timerState.promptMessage}</span>
-          </div>
-        </div>
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
       </div>
     );
   }
@@ -485,10 +470,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           alignItems: 'center',
           gap: '18px',
           color: '#ffffff',
-<<<<<<< HEAD
           overflow: 'hidden',
-=======
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
         }}>
           <div style={{
             width: '48px',
@@ -504,25 +486,17 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             <MessageSquare size={24} color="#ffffff" />
           </div>
 
-<<<<<<< HEAD
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-=======
-          <div style={{ flex: 1 }}>
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
             <div style={{
               fontSize: '11px',
               fontWeight: 800,
               letterSpacing: '0.15em',
               color: '#f59e0b',
               textTransform: 'uppercase',
-<<<<<<< HEAD
               marginBottom: '3px',
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
-=======
-              marginBottom: '3px'
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
             }}>
               STAGE PROMPT MESSAGE
             </div>
@@ -532,7 +506,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
               lineHeight: 1.25,
               color: '#ffffff',
               textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-<<<<<<< HEAD
               overflow: 'hidden',
               whiteSpace: 'nowrap',
               width: '100%',
@@ -551,10 +524,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
               >
                 {timerState.promptMessage}
               </span>
-=======
-            }}>
-              {timerState.promptMessage}
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
             </div>
           </div>
         </div>
@@ -570,13 +539,10 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           0% { transform: scale(1); filter: brightness(1); }
           100% { transform: scale(1.03); filter: brightness(1.18); }
         }
-<<<<<<< HEAD
         @keyframes promptScroll {
           0% { transform: translateX(0%); }
           100% { transform: translateX(-100%); }
         }
-=======
->>>>>>> 64aca51426f0dcaa4af258949d769432fcdf3cfa
       `}</style>
     </div>
   );
