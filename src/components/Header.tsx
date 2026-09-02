@@ -159,16 +159,16 @@ export const Header: React.FC<HeaderProps> = ({
           style={{
             fontSize: '12px',
             padding: '6px 12px',
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(6, 182, 212, 0.25))',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(56, 189, 248, 0.2))',
             borderColor: 'rgba(56, 189, 248, 0.4)',
             color: '#38bdf8',
             fontWeight: 700,
           }}
           onClick={onOpenOnlineSearch}
-          title="Search song lyrics online and load directly into presentation & library"
+          title="Search Bible scripture verses and worship song lyrics online"
         >
           <Search size={13} />
-          Search Online Lyrics
+          Search Online (Lyrics & Scripture)
         </button>
 
         <button 

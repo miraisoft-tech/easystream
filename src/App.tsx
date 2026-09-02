@@ -136,6 +136,7 @@ export const App: React.FC = () => {
       <OnlineLyricsSearchModal
         isOpen={isOnlineSearchOpen}
         onClose={() => setIsOnlineSearchOpen(false)}
+        library={state.library}
         onSaveLibraryItem={saveLibraryItem}
         onAddToSchedule={handleAddToSchedule}
         onGoLiveWithItem={handleGoLiveWithLibraryItem}
