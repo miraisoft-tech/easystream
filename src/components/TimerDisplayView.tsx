@@ -91,6 +91,9 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
     ? 100
     : Math.min(100, Math.max(0, Math.round(((totalDuration - Math.max(0, currentSec)) / totalDuration) * 100)));
 
+  const promptText = timerState.promptMessage || '';
+  const promptScrollDuration = Math.max(10, Math.round(promptText.length * 0.35));
+
   // If overlay mode (for vMix/OBS alpha capture)
   if (isOverlay) {
     return (
@@ -173,12 +176,14 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           zIndex: 100,
           pointerEvents: 'none',
+          width: 'min(560px, 90vw)',
+          maxWidth: '100%',
         }}>
           <div style={{
             background: 'rgba(15, 23, 42, 0.95)',
             border: '2px solid #f59e0b',
             borderRadius: '14px',
-            padding: '12px 24px',
+            padding: '12px 20px',
             color: '#ffffff',
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.4)',
             display: 'flex',
@@ -186,11 +191,43 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             gap: '12px',
             fontSize: '18px',
             fontWeight: 800,
+            overflow: 'hidden',
           }}>
-            <Bell size={20} color="#f59e0b" />
-            <span>{timerState.promptMessage}</span>
+            <Bell size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+            <div style={{
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)',
+            }}>
+              <span
+                key={timerState.promptMessage}
+                style={{
+                  display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                  paddingLeft: '100%',
+                  animation: `promptScroll ${promptScrollDuration}s linear infinite`,
+                  willChange: 'transform',
+                }}
+              >
+                {timerState.promptMessage}
+              </span>
+            </div>
           </div>
         </div>
+
+        <style>{`
+          @keyframes timerPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.995); }
+          }
+          @keyframes promptScroll {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-100%); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -433,6 +470,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           alignItems: 'center',
           gap: '18px',
           color: '#ffffff',
+          overflow: 'hidden',
         }}>
           <div style={{
             width: '48px',
@@ -448,14 +486,17 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             <MessageSquare size={24} color="#ffffff" />
           </div>
 
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <div style={{
               fontSize: '11px',
               fontWeight: 800,
               letterSpacing: '0.15em',
               color: '#f59e0b',
               textTransform: 'uppercase',
-              marginBottom: '3px'
+              marginBottom: '3px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}>
               STAGE PROMPT MESSAGE
             </div>
@@ -465,8 +506,24 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
               lineHeight: 1.25,
               color: '#ffffff',
               textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              width: '100%',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%)',
             }}>
-              {timerState.promptMessage}
+              <span
+                key={timerState.promptMessage}
+                style={{
+                  display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                  paddingLeft: '100%',
+                  animation: `promptScroll ${promptScrollDuration}s linear infinite`,
+                  willChange: 'transform',
+                }}
+              >
+                {timerState.promptMessage}
+              </span>
             </div>
           </div>
         </div>
@@ -481,6 +538,10 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         @keyframes timerStrobe {
           0% { transform: scale(1); filter: brightness(1); }
           100% { transform: scale(1.03); filter: brightness(1.18); }
+        }
+        @keyframes promptScroll {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-100%); }
         }
       `}</style>
     </div>
