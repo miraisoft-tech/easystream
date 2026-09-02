@@ -8,6 +8,8 @@ import { LibraryModal } from './components/LibraryModal';
 import { OnlineLyricsSearchModal } from './components/OnlineLyricsSearchModal';
 import { DisplayView } from './components/DisplayView';
 import { StageView } from './components/StageView';
+import { TimerDisplayView } from './components/TimerDisplayView';
+import { TimerModal } from './components/TimerModal';
 import { LibraryItem, ScheduleItem } from './types';
 
 export const App: React.FC = () => {
@@ -23,6 +25,12 @@ export const App: React.FC = () => {
     updateTheme,
     updateLiveState,
     setQuickAlert,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    adjustTimer,
+    setTimerConfig,
+    setTimerPrompt,
     loadScheduleItem,
     updateSchedule,
     saveSchedule,
@@ -35,6 +43,7 @@ export const App: React.FC = () => {
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isOnlineSearchOpen, setIsOnlineSearchOpen] = useState(false);
+  const [isTimerOpen, setIsTimerOpen] = useState(false);
 
   // Simple client-side route checking
   const pathname = window.location.pathname;
@@ -47,6 +56,10 @@ export const App: React.FC = () => {
 
   if (pathname === '/stage' || pathname === '/stage.html') {
     return <StageView state={state} progress={progress} />;
+  }
+
+  if (pathname === '/timer' || pathname === '/timer.html' || pathname === '/countdown' || pathname === '/countdown.html') {
+    return <TimerDisplayView timerState={state.timerState} liveState={state.liveState} isOverlay={isOverlayMode} />;
   }
 
   // Handle adding an item from library to the active schedule
@@ -76,10 +89,12 @@ export const App: React.FC = () => {
       <Header
         isConnected={isConnected}
         liveState={state.liveState}
+        timerState={state.timerState}
         onUpdateLiveState={updateLiveState}
         onSetQuickAlert={setQuickAlert}
         onOpenLibrary={() => setIsLibraryOpen(true)}
         onOpenOnlineSearch={() => setIsOnlineSearchOpen(true)}
+        onOpenTimer={() => setIsTimerOpen(true)}
         onResetToDefault={resetToDefault}
       />
 
@@ -140,6 +155,19 @@ export const App: React.FC = () => {
         onSaveLibraryItem={saveLibraryItem}
         onAddToSchedule={handleAddToSchedule}
         onGoLiveWithItem={handleGoLiveWithLibraryItem}
+      />
+
+      {/* Countdown & Overtime Timer Management Modal */}
+      <TimerModal
+        isOpen={isTimerOpen}
+        onClose={() => setIsTimerOpen(false)}
+        timerState={state.timerState}
+        onStartTimer={startTimer}
+        onPauseTimer={pauseTimer}
+        onResetTimer={resetTimer}
+        onAdjustTimer={adjustTimer}
+        onSetTimerConfig={setTimerConfig}
+        onSetTimerPrompt={setTimerPrompt}
       />
     </div>
   );

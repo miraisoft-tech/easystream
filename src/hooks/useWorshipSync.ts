@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AppState, WebSocketClientMessage, WebSocketServerMessage, PresentationTheme, LiveState, Schedule, ScheduleItem, LibraryItem } from '../types';
-import { DEFAULT_THEME, DEFAULT_LIBRARY_ITEMS, DEFAULT_SCHEDULES } from '../data/defaults';
+import { AppState, WebSocketClientMessage, WebSocketServerMessage, PresentationTheme, LiveState, Schedule, ScheduleItem, LibraryItem, TimerState } from '../types';
+import { DEFAULT_THEME, DEFAULT_LIBRARY_ITEMS, DEFAULT_SCHEDULES, DEFAULT_TIMER_STATE } from '../data/defaults';
 
 const INITIAL_STATE: AppState = {
   title: 'Psalm 23',
@@ -19,6 +19,7 @@ const INITIAL_STATE: AppState = {
     isFrozen: false,
     quickAlert: null,
   },
+  timerState: DEFAULT_TIMER_STATE,
   theme: DEFAULT_THEME,
   currentScheduleId: 'sunday-morning-worship',
   activeScheduleIndex: 0,
@@ -208,6 +209,31 @@ export function useWorshipSync() {
     send({ type: 'resetToDefault' });
   }, [send]);
 
+  // Timer Control Helpers
+  const startTimer = useCallback((durationSec?: number, title?: string) => {
+    send({ type: 'startTimer', durationSec, title });
+  }, [send]);
+
+  const pauseTimer = useCallback(() => {
+    send({ type: 'pauseTimer' });
+  }, [send]);
+
+  const resetTimer = useCallback(() => {
+    send({ type: 'resetTimer' });
+  }, [send]);
+
+  const adjustTimer = useCallback((deltaSec: number) => {
+    send({ type: 'adjustTimer', deltaSec });
+  }, [send]);
+
+  const setTimerConfig = useCallback((config: Partial<TimerState>) => {
+    send({ type: 'setTimerConfig', config });
+  }, [send]);
+
+  const setTimerPrompt = useCallback((message: string | null, visible: boolean) => {
+    send({ type: 'setTimerPrompt', message, visible });
+  }, [send]);
+
   return {
     state,
     isConnected,
@@ -221,6 +247,12 @@ export function useWorshipSync() {
     updateTheme,
     updateLiveState,
     setQuickAlert,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    adjustTimer,
+    setTimerConfig,
+    setTimerPrompt,
     loadScheduleItem,
     updateSchedule,
     saveSchedule,

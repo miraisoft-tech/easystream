@@ -43,6 +43,19 @@
     "showProgressBar": true,
     "showReferenceBadge": true
   },
+  "timerState": {
+    "status": "idle",
+    "durationSec": 60,
+    "remainingSec": 60,
+    "startedAt": null,
+    "targetEndTime": null,
+    "allowOvertime": true,
+    "warningThresholdSec": 300,
+    "criticalThresholdSec": 60,
+    "title": "Test Service Countdown",
+    "promptMessage": null,
+    "promptVisible": false
+  },
   "currentScheduleId": "sunday-morning-worship",
   "schedule": [
     {

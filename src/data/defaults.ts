@@ -1,4 +1,18 @@
-import { PresentationTheme, LibraryItem, Schedule } from '../types';
+import { PresentationTheme, LibraryItem, Schedule, TimerState } from '../types';
+
+export const DEFAULT_TIMER_STATE: TimerState = {
+  status: 'idle',
+  durationSec: 3600, // 60 minutes default
+  remainingSec: 3600,
+  startedAt: null,
+  targetEndTime: null,
+  allowOvertime: true,
+  warningThresholdSec: 300, // 5 min
+  criticalThresholdSec: 60, // 1 min
+  title: 'Service Countdown',
+  promptMessage: null,
+  promptVisible: false,
+};
 
 export const DEFAULT_THEME: PresentationTheme = {
   fontFamily: 'Montserrat, sans-serif',
