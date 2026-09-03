@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState } from '../types';
+import { Maximize2, Minimize2, Tv, Circle } from 'lucide-react';
 
 interface DisplayViewProps {
   state: AppState;
@@ -15,11 +16,82 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
   const [fading, setFading] = useState(false);
   const [displayedLine, setDisplayedLine] = useState(state.lines[state.cur] || '');
   const [displayedNext, setDisplayedNext] = useState(state.lines[state.cur + 1] || '');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [showHintToast, setShowHintToast] = useState(true);
+  const [isMouseIdle, setIsMouseIdle] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check URL query parameters for overlay overrides
   const urlParams = new URLSearchParams(window.location.search);
   const queryOverlay = urlParams.get('overlay') === '1' || urlParams.get('transparent') === '1';
   const effectiveOverlay = isOverlay || queryOverlay || state.theme.bgType === 'transparent' || state.theme.displayMode === 'lower-third';
+
+  // Track Fullscreen state changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Toggle Fullscreen Edge-to-Edge
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn('Unable to toggle fullscreen:', err);
+    }
+  }, []);
+
+  // Keyboard Shortcuts ('F' for Fullscreen)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Avoid triggering if inside input/textarea
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFullscreen]);
+
+  // Activity timer: auto-hide cursor & floating HUD after 2.5s of mouse inactivity
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    setIsMouseIdle(false);
+
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+
+    hideTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+      setIsMouseIdle(true);
+    }, 2500);
+  }, []);
+
+  // Auto-dismiss initial hint toast after 4s
+  useEffect(() => {
+    const toastTimer = setTimeout(() => {
+      setShowHintToast(false);
+    }, 4000);
+    return () => clearTimeout(toastTimer);
+  }, []);
 
   // Smooth slide change fade effect
   useEffect(() => {
@@ -70,7 +142,9 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
 
   return (
     <div
-      className={bgClass}
+      className={`display-canvas-root ${bgClass} ${isMouseIdle ? 'hide-cursor' : ''}`}
+      onMouseMove={handleMouseMove}
+      onDoubleClick={toggleFullscreen}
       style={{
         width: '100vw',
         height: '100vh',
@@ -86,6 +160,34 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
         ...bgStyle,
       }}
     >
+      {/* Floating Auto-Hiding Presentation HUD */}
+      <div className={`display-hud-controls ${showControls ? 'visible' : ''}`}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8', fontWeight: 600, paddingRight: '4px' }}>
+          <Circle size={8} fill="#10b981" color="transparent" />
+          <span>LIVE DISPLAY</span>
+        </div>
+
+        <button
+          className="display-hud-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
+          title={isFullscreen ? 'Exit Fullscreen (Esc or F)' : 'Enter Edge-to-Edge Fullscreen (F)'}
+        >
+          {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'}</span>
+        </button>
+      </div>
+
+      {/* Initial Hint Toast (fades after 4s) */}
+      {showHintToast && !isFullscreen && (
+        <div className="display-hint-toast">
+          <Tv size={14} color="#38bdf8" />
+          <span>Double-click or press <strong>F</strong> for borderless full screen</span>
+        </div>
+      )}
+
       {/* Broadcast Quick Ticker Alert Banner */}
       {liveState.quickAlert && (
         <div className="quick-alert-banner">
@@ -244,3 +346,4 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
     </div>
   );
 };
+

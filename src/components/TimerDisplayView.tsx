@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TimerState, LiveState, TimerSlot } from '../types';
-import { Clock, AlertTriangle, MessageSquare, Radio, Bell, Sparkles, FastForward, User } from 'lucide-react';
+import { Clock, AlertTriangle, MessageSquare, Radio, Bell, Sparkles, FastForward, User, Maximize2, Minimize2 } from 'lucide-react';
 
 interface TimerDisplayViewProps {
   timerState: TimerState;
@@ -14,6 +14,66 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
 }) => {
   const [now, setNow] = useState(Date.now());
   const [clockStr, setClockStr] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [isMouseIdle, setIsMouseIdle] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track Fullscreen state changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn('Unable to toggle fullscreen:', err);
+    }
+  }, []);
+
+  // Keyboard Shortcuts ('F' for Fullscreen)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFullscreen]);
+
+  // Activity timer
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    setIsMouseIdle(false);
+
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+
+    hideTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+      setIsMouseIdle(true);
+    }, 2500);
+  }, []);
 
   // Update ticks smoothly
   useEffect(() => {
@@ -317,23 +377,43 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
 
   // Full-screen Stage & Confidence Monitor Mode
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: '#05070c',
-      backgroundImage: isOvertime
-        ? 'radial-gradient(ellipse at center, rgba(153, 27, 27, 0.28) 0%, rgba(5, 7, 12, 1) 75%)'
-        : 'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.65) 0%, rgba(5, 7, 12, 1) 85%)',
-      color: '#ffffff',
-      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '2.25rem 3.5rem',
-      boxSizing: 'border-box',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div
+      className={`display-canvas-root ${isMouseIdle ? 'hide-cursor' : ''}`}
+      onMouseMove={handleMouseMove}
+      onDoubleClick={toggleFullscreen}
+      style={{
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#05070c',
+        backgroundImage: isOvertime
+          ? 'radial-gradient(ellipse at center, rgba(153, 27, 27, 0.28) 0%, rgba(5, 7, 12, 1) 75%)'
+          : 'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.65) 0%, rgba(5, 7, 12, 1) 85%)',
+        color: '#ffffff',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '2.25rem 3.5rem',
+        boxSizing: 'border-box',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Floating HUD Controls */}
+      <div className={`display-hud-controls ${showControls ? 'visible' : ''}`}>
+        <button
+          className="display-hud-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
+          title={isFullscreen ? 'Exit Fullscreen (Esc or F)' : 'Enter Edge-to-Edge Fullscreen (F)'}
+        >
+          {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'}</span>
+        </button>
+      </div>
+
       {/* Top Header Row */}
       <div style={{
         display: 'flex',

@@ -84,6 +84,23 @@ export const Header: React.FC<HeaderProps> = ({
     setIsAlertModalOpen(false);
   };
 
+  const openBorderlessWindow = (url: string, windowName: string, e: React.MouseEvent) => {
+    // If user clicked with Ctrl/Cmd or middle click, allow default link behaviour
+    if (e.metaKey || e.ctrlKey || e.button === 1) return;
+    e.preventDefault();
+
+    const screenWidth = window.screen.availWidth || 1920;
+    const screenHeight = window.screen.availHeight || 1080;
+    const features = `width=${screenWidth},height=${screenHeight},left=0,top=0,popup=yes,menubar=no,toolbar=no,location=no,status=no,directories=no,resizable=yes,scrollbars=no`;
+    
+    const popupWin = window.open(url, windowName, features);
+    if (!popupWin) {
+      window.open(url, '_blank');
+    } else {
+      popupWin.focus();
+    }
+  };
+
   return (
     <header className="studio-header">
       {/* Left: Brand + Connection Status */}
@@ -242,9 +259,10 @@ export const Header: React.FC<HeaderProps> = ({
             href="/display"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => openBorderlessWindow('/display', 'easypresenter_display', e)}
             className="btn"
             style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none' }}
-            title="Open Fullscreen Display in a new tab (for Projector / TV)"
+            title="Open Fullscreen Display Window without address bar (for Projector / TV)"
           >
             <Tv size={13} />
             Display
@@ -255,6 +273,7 @@ export const Header: React.FC<HeaderProps> = ({
             href="/display?overlay=1"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => openBorderlessWindow('/display?overlay=1', 'easypresenter_vmix', e)}
             className="btn"
             style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}
             title="Open vMix / OBS Alpha-channel broadcast overlay"
@@ -268,6 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
             href="/stage"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => openBorderlessWindow('/stage', 'easypresenter_stage', e)}
             className="btn"
             style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none' }}
             title="Open Stage Confidence Monitor for singers & speaker"
@@ -281,9 +301,10 @@ export const Header: React.FC<HeaderProps> = ({
             href="/timer"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => openBorderlessWindow('/timer', 'easypresenter_timer', e)}
             className="btn"
             style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none', background: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8' }}
-            title="Open Countdown & Overtime Display in a new tab"
+            title="Open Countdown & Overtime Display in a borderless window"
           >
             <Clock size={13} />
             Timer

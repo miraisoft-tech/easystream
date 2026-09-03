@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState } from '../types';
-import { Clock, Mic2 } from 'lucide-react';
+import { Clock, Mic2, Maximize2, Minimize2 } from 'lucide-react';
 
 interface StageViewProps {
   state: AppState;
@@ -9,6 +9,10 @@ interface StageViewProps {
 
 export const StageView: React.FC<StageViewProps> = ({ state, progress }) => {
   const [timeStr, setTimeStr] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [isMouseIdle, setIsMouseIdle] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -20,22 +24,99 @@ export const StageView: React.FC<StageViewProps> = ({ state, progress }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Track Fullscreen state changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn('Unable to toggle fullscreen:', err);
+    }
+  }, []);
+
+  // Keyboard Shortcuts ('F' for Fullscreen)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFullscreen]);
+
+  // Activity timer
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    setIsMouseIdle(false);
+
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+
+    hideTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+      setIsMouseIdle(true);
+    }, 2500);
+  }, []);
+
   const currentLine = state.lines[state.cur] || '';
   const nextLine = state.lines[state.cur + 1] || '';
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      background: '#000000',
-      color: '#ffffff',
-      fontFamily: 'Inter, sans-serif',
-      padding: '2rem 3rem',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-    }}>
+    <div
+      className={`display-canvas-root ${isMouseIdle ? 'hide-cursor' : ''}`}
+      onMouseMove={handleMouseMove}
+      onDoubleClick={toggleFullscreen}
+      style={{
+        width: '100vw',
+        height: '100vh',
+        background: '#000000',
+        color: '#ffffff',
+        fontFamily: 'Inter, sans-serif',
+        padding: '2rem 3rem',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        position: 'relative',
+      }}
+    >
+      {/* Floating HUD Controls */}
+      <div className={`display-hud-controls ${showControls ? 'visible' : ''}`}>
+        <button
+          className="display-hud-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
+          title={isFullscreen ? 'Exit Fullscreen (Esc or F)' : 'Enter Edge-to-Edge Fullscreen (F)'}
+        >
+          {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'}</span>
+        </button>
+      </div>
+
       {/* Alert Banner if active */}
       {state.liveState.quickAlert && (
         <div style={{
@@ -178,3 +259,4 @@ export const StageView: React.FC<StageViewProps> = ({ state, progress }) => {
     </div>
   );
 };
+

@@ -22,7 +22,9 @@ import {
   Trash2, 
   User, 
   SkipBack, 
-  Bookmark 
+  Bookmark,
+  Pencil,
+  X
 } from 'lucide-react';
 
 interface TimerModalProps {
@@ -56,6 +58,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   onSetTimerConfig,
   onSetTimerPrompt,
   onAddTimerSlot,
+  onUpdateTimerSlot,
   onDeleteTimerSlot,
   onReorderTimerSlots,
   onJumpToTimerSlot,
@@ -75,6 +78,35 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   const [newSlotMins, setNewSlotMins] = useState(15);
   const [newSlotSpeaker, setNewSlotSpeaker] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
+
+  // Editing Slot State
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [editSlotTitle, setEditSlotTitle] = useState('');
+  const [editSlotMins, setEditSlotMins] = useState(15);
+  const [editSlotSpeaker, setEditSlotSpeaker] = useState('');
+
+  const startEditingSlot = (slot: TimerSlot) => {
+    setEditingSlotId(slot.id);
+    setEditSlotTitle(slot.title);
+    setEditSlotMins(Math.max(1, Math.round(slot.durationSec / 60)));
+    setEditSlotSpeaker(slot.speaker || '');
+  };
+
+  const saveEditingSlot = (id: string) => {
+    if (!editSlotTitle.trim()) return;
+    if (onUpdateTimerSlot) {
+      onUpdateTimerSlot(id, {
+        title: editSlotTitle.trim(),
+        durationSec: Math.max(1, editSlotMins) * 60,
+        speaker: editSlotSpeaker.trim() || undefined,
+      });
+    }
+    setEditingSlotId(null);
+  };
+
+  const cancelEditingSlot = () => {
+    setEditingSlotId(null);
+  };
 
   // Update live preview ticking
   useEffect(() => {
@@ -645,7 +677,96 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                     const isActive = index === activeSlotIndex;
                     const isUpcomingNext = index === activeSlotIndex + 1;
                     const isCompleted = index < activeSlotIndex;
+                    const isEditing = editingSlotId === slot.id;
                     const slotMins = Math.round(slot.durationSec / 60);
+
+                    if (isEditing) {
+                      return (
+                        <div
+                          key={slot.id}
+                          style={{
+                            background: 'rgba(56, 189, 248, 0.08)',
+                            border: '1px solid #38bdf8',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#38bdf8' }}>
+                              Editing Slot #{index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-icon"
+                              style={{ width: '24px', height: '24px' }}
+                              onClick={cancelEditingSlot}
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '8px' }}>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Title</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ fontSize: '13px', padding: '6px 10px' }}
+                                value={editSlotTitle}
+                                onChange={(e) => setEditSlotTitle(e.target.value)}
+                                autoFocus
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Duration (min)</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={300}
+                                className="form-input"
+                                style={{ fontSize: '13px', padding: '6px 10px' }}
+                                value={editSlotMins}
+                                onChange={(e) => setEditSlotMins(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Speaker / Leader</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ fontSize: '13px', padding: '6px 10px' }}
+                                value={editSlotSpeaker}
+                                onChange={(e) => setEditSlotSpeaker(e.target.value)}
+                                placeholder="Optional"
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '2px' }}>
+                            <button
+                              type="button"
+                              className="btn"
+                              style={{ fontSize: '12px', padding: '5px 12px' }}
+                              onClick={cancelEditingSlot}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              style={{ fontSize: '12px', padding: '5px 14px' }}
+                              onClick={() => saveEditingSlot(slot.id)}
+                            >
+                              <Check size={13} /> Save Slot
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div
@@ -771,6 +892,17 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                             title="Make active and start timer"
                           >
                             <Play size={12} fill={isActive ? '#05070c' : 'currentColor'} /> {isActive ? 'Live' : 'Jump'}
+                          </button>
+
+                          {/* Edit Slot */}
+                          <button
+                            type="button"
+                            className="btn btn-icon"
+                            onClick={() => startEditingSlot(slot)}
+                            style={{ width: '28px', height: '28px', color: '#38bdf8' }}
+                            title="Edit Slot"
+                          >
+                            <Pencil size={13} />
                           </button>
 
                           {/* Move Up/Down */}

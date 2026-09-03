@@ -1,0 +1,18 @@
+{
+  "name": "EasyPresenter Studio",
+  "short_name": "EasyPresenter",
+  "description": "Live Church & Event Presentation System",
+  "start_url": "/display",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "window-controls-overlay", "standalone"],
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='6 3 20 12 6 21 6 3'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
