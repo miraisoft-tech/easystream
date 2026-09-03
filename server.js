@@ -578,6 +578,9 @@ function updateTimerSlot(id, updates) {
       state.timerState.durationSec = updates.durationSec;
       state.timerState.remainingSec = updates.durationSec;
     }
+    if (updates.warningThresholdSec !== undefined) {
+      state.timerState.warningThresholdSec = updates.warningThresholdSec;
+    }
   }
   saveStoreToDisk();
 }
@@ -646,6 +649,9 @@ function setTimerSlots(slots, activeIndex = 0) {
     state.timerState.title = activeSlot.title;
     state.timerState.durationSec = activeSlot.durationSec;
     state.timerState.remainingSec = activeSlot.durationSec;
+    if (activeSlot.warningThresholdSec) {
+      state.timerState.warningThresholdSec = activeSlot.warningThresholdSec;
+    }
   }
   saveStoreToDisk();
 }

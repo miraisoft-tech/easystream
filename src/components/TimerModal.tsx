@@ -76,6 +76,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   // New Slot Form State
   const [newSlotTitle, setNewSlotTitle] = useState('');
   const [newSlotMins, setNewSlotMins] = useState(15);
+  const [newSlotWarningSec, setNewSlotWarningSec] = useState<number>(300);
   const [newSlotSpeaker, setNewSlotSpeaker] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
 
@@ -83,12 +84,14 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
   const [editSlotTitle, setEditSlotTitle] = useState('');
   const [editSlotMins, setEditSlotMins] = useState(15);
+  const [editSlotWarningSec, setEditSlotWarningSec] = useState<number>(300);
   const [editSlotSpeaker, setEditSlotSpeaker] = useState('');
 
   const startEditingSlot = (slot: TimerSlot) => {
     setEditingSlotId(slot.id);
     setEditSlotTitle(slot.title);
     setEditSlotMins(Math.max(1, Math.round(slot.durationSec / 60)));
+    setEditSlotWarningSec(slot.warningThresholdSec ?? 300);
     setEditSlotSpeaker(slot.speaker || '');
   };
 
@@ -99,6 +102,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
         title: editSlotTitle.trim(),
         durationSec: Math.max(1, editSlotMins) * 60,
         speaker: editSlotSpeaker.trim() || undefined,
+        warningThresholdSec: editSlotWarningSec,
       });
     }
     setEditingSlotId(null);
@@ -216,12 +220,14 @@ export const TimerModal: React.FC<TimerModalProps> = ({
       title: newSlotTitle.trim(),
       durationSec: Math.max(10, newSlotMins * 60),
       speaker: newSlotSpeaker.trim() || undefined,
+      warningThresholdSec: newSlotWarningSec,
     };
     if (onAddTimerSlot) {
       onAddTimerSlot(newSlot);
     }
     setNewSlotTitle('');
     setNewSlotSpeaker('');
+    setNewSlotWarningSec(300);
     setIsAddingSlot(false);
   };
 
@@ -610,7 +616,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#38bdf8' }}>
                     New Program Slot Details
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.5fr', gap: '10px' }}>
                     <div>
                       <label className="form-label">Program Title</label>
                       <input
@@ -634,6 +640,21 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                         onChange={e => setNewSlotMins(Number(e.target.value))}
                         required
                       />
+                    </div>
+                    <div>
+                      <label className="form-label">Warning Alert</label>
+                      <select
+                        className="form-input"
+                        value={newSlotWarningSec}
+                        onChange={e => setNewSlotWarningSec(Number(e.target.value))}
+                      >
+                        <option value={30}>30s (Urgent)</option>
+                        <option value={60}>1 min</option>
+                        <option value={120}>2 min</option>
+                        <option value={180}>3 min</option>
+                        <option value={300}>5 min (Default)</option>
+                        <option value={600}>10 min</option>
+                      </select>
                     </div>
                     <div>
                       <label className="form-label">Speaker / Lead (Optional)</label>
@@ -709,7 +730,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                             </button>
                           </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.5fr', gap: '8px' }}>
                             <div>
                               <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Title</label>
                               <input
@@ -732,6 +753,22 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                                 value={editSlotMins}
                                 onChange={(e) => setEditSlotMins(Math.max(1, parseInt(e.target.value, 10) || 1))}
                               />
+                            </div>
+                            <div>
+                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Warning Alert</label>
+                              <select
+                                className="form-input"
+                                style={{ fontSize: '13px', padding: '6px 10px' }}
+                                value={editSlotWarningSec}
+                                onChange={(e) => setEditSlotWarningSec(Number(e.target.value))}
+                              >
+                                <option value={30}>30s (Urgent)</option>
+                                <option value={60}>1 min</option>
+                                <option value={120}>2 min</option>
+                                <option value={180}>3 min</option>
+                                <option value={300}>5 min (Default)</option>
+                                <option value={600}>10 min</option>
+                              </select>
                             </div>
                             <div>
                               <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Speaker / Leader</label>
@@ -868,6 +905,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
                               <span>Duration: <strong style={{ color: '#cbd5e1' }}>{slotMins} min</strong></span>
+                              <span>• Warn: <strong style={{ color: '#f59e0b' }}>{slot.warningThresholdSec ? (slot.warningThresholdSec >= 60 ? `${Math.round(slot.warningThresholdSec / 60)}m` : `${slot.warningThresholdSec}s`) : '5m'}</strong></span>
                               {slot.speaker && (
                                 <span>• <User size={11} style={{ display: 'inline' }} /> {slot.speaker}</span>
                               )}
