@@ -45,16 +45,56 @@
   },
   "timerState": {
     "status": "idle",
-    "durationSec": 60,
-    "remainingSec": 60,
+    "durationSec": 600,
+    "remainingSec": 600,
     "startedAt": null,
     "targetEndTime": null,
     "allowOvertime": true,
-    "warningThresholdSec": 300,
+    "warningThresholdSec": 120,
     "criticalThresholdSec": 60,
-    "title": "Test Service Countdown",
+    "title": "Praise & Worship",
     "promptMessage": null,
-    "promptVisible": false
+    "promptVisible": false,
+    "slots": [
+      {
+        "id": "slot-1",
+        "title": "Opening & Welcome",
+        "durationSec": 300,
+        "speaker": "Host / Worship Leader",
+        "warningThresholdSec": 60
+      },
+      {
+        "id": "slot-2",
+        "title": "Praise & Worship",
+        "durationSec": 600,
+        "speaker": "Worship Team",
+        "warningThresholdSec": 120
+      },
+      {
+        "id": "slot-3",
+        "title": "Announcements & Offering",
+        "durationSec": 420,
+        "speaker": "Pastoral Team",
+        "warningThresholdSec": 60
+      },
+      {
+        "id": "slot-4",
+        "title": "Sermon / Message",
+        "durationSec": 2700,
+        "speaker": "Lead Pastor",
+        "warningThresholdSec": 300
+      },
+      {
+        "id": "slot-5",
+        "title": "Altar Call & Closing Benediction",
+        "durationSec": 900,
+        "speaker": "Pastor",
+        "warningThresholdSec": 60
+      }
+    ],
+    "activeSlotIndex": 1,
+    "autoAdvance": false,
+    "showNextProgramAlert": true
   },
   "currentScheduleId": "sunday-morning-worship",
   "schedule": [

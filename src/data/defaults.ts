@@ -72,6 +72,7 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   activeSlotIndex: 0,
   autoAdvance: false,
   showNextProgramAlert: true,
+  fontSizeScale: 100,
 };
 
 export const DEFAULT_THEME: PresentationTheme = {

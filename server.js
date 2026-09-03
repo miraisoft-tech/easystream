@@ -230,6 +230,7 @@ const DEFAULT_TIMER_STATE = {
   activeSlotIndex: 0,
   autoAdvance: false,
   showNextProgramAlert: true,
+  fontSizeScale: 100,
 };
 
 function loadSavedStore() {

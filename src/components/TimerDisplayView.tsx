@@ -1,23 +1,39 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TimerState, LiveState, TimerSlot } from '../types';
-import { Clock, AlertTriangle, MessageSquare, Radio, Bell, Sparkles, FastForward, User, Maximize2, Minimize2 } from 'lucide-react';
+import { Clock, AlertTriangle, MessageSquare, Bell, Sparkles, FastForward, Maximize2, Minimize2, Plus, Minus } from 'lucide-react';
 
 interface TimerDisplayViewProps {
   timerState: TimerState;
   liveState?: LiveState;
   isOverlay?: boolean;
+  onSetTimerConfig?: (config: Partial<TimerState>) => void;
 }
 
 export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   timerState,
   isOverlay = false,
+  onSetTimerConfig,
 }) => {
   const [now, setNow] = useState(Date.now());
-  const [clockStr, setClockStr] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [isMouseIdle, setIsMouseIdle] = useState(false);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const currentScale = timerState.fontSizeScale || 100;
+
+  const handleAdjustFontSize = useCallback((delta: number) => {
+    const next = Math.max(60, Math.min(350, currentScale + delta));
+    if (onSetTimerConfig) {
+      onSetTimerConfig({ fontSizeScale: next });
+    }
+  }, [currentScale, onSetTimerConfig]);
+
+  const handleSetFontSize = useCallback((scale: number) => {
+    if (onSetTimerConfig) {
+      onSetTimerConfig({ fontSizeScale: scale });
+    }
+  }, [onSetTimerConfig]);
 
   // Track Fullscreen state changes
   useEffect(() => {
@@ -78,7 +94,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
     };
   }, []);
 
-  // Keyboard Shortcuts ('F' for Fullscreen)
+  // Keyboard Shortcuts ('F' for Fullscreen, '+', '-', '0' for Font Size)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -87,12 +103,21 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         toggleFullscreen();
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleAdjustFontSize(15);
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleAdjustFontSize(-15);
+      } else if (e.key === '0') {
+        e.preventDefault();
+        handleSetFontSize(100);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFullscreen]);
+  }, [toggleFullscreen, handleAdjustFontSize, handleSetFontSize]);
 
   // Activity timer
   const handleMouseMove = useCallback(() => {
@@ -113,8 +138,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   useEffect(() => {
     const update = () => {
       setNow(Date.now());
-      const d = new Date();
-      setClockStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     };
     update();
     const interval = setInterval(update, 200);
@@ -136,7 +159,6 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   const activeSlotIndex = typeof timerState.activeSlotIndex === 'number' ? timerState.activeSlotIndex : 0;
   const currentSlot = slots[activeSlotIndex] || null;
   const nextSlot = activeSlotIndex + 1 < slots.length ? slots[activeSlotIndex + 1] : null;
-  const hasMultipleSlots = slots.length > 1;
 
   // Should display the bottom sliding "Next Program" banner when time is up
   const showNextProgramBanner = isTimeUp && nextSlot !== null && timerState.showNextProgramAlert !== false;
@@ -168,24 +190,19 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
 
   let timerColor = '#38bdf8'; // Normal: Cyan
   let timerShadow = '0 0 40px rgba(56, 189, 248, 0.35)';
-  let stateLabel = 'COUNTDOWN';
 
   if (isOvertime) {
     timerColor = '#ef4444'; // Red Overtime
     timerShadow = '0 0 50px rgba(239, 68, 68, 0.65)';
-    stateLabel = 'OVERTIME';
   } else if (currentSec <= criticalSec) {
     timerColor = '#f97316'; // Orange Urgent
     timerShadow = '0 0 45px rgba(249, 115, 22, 0.55)';
-    stateLabel = 'FINAL MINUTE';
   } else if (currentSec <= warningSec) {
     timerColor = '#f59e0b'; // Amber Warning
     timerShadow = '0 0 40px rgba(245, 158, 11, 0.45)';
-    stateLabel = 'WARNING';
   } else if (timerState.status === 'paused') {
     timerColor = '#94a3b8';
     timerShadow = 'none';
-    stateLabel = 'PAUSED';
   }
 
   // Calculate elapsed progress percentage
@@ -426,15 +443,79 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
+        alignItems: 'center',
         padding: '2.25rem 3.5rem',
         boxSizing: 'border-box',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Floating HUD Controls */}
+      {/* Floating HUD Controls with On-Screen Font Size Controller */}
       <div className={`display-hud-controls ${showControls ? 'visible' : ''}`}>
+        {/* On-Screen Font Size Quick Adjuster */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid rgba(255, 255, 255, 0.15)', paddingRight: '8px' }}>
+          <button
+            className="display-hud-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAdjustFontSize(-15);
+            }}
+            title="Decrease Font Size (-)"
+            style={{ padding: '4px 8px', fontSize: '11px' }}
+          >
+            <Minus size={12} /> A
+          </button>
+
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#38bdf8',
+              padding: '0 4px',
+              fontVariantNumeric: 'tabular-nums',
+              minWidth: '38px',
+              textAlign: 'center',
+            }}
+            title="Current Font Scale"
+          >
+            {currentScale}%
+          </span>
+
+          <button
+            className="display-hud-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAdjustFontSize(15);
+            }}
+            title="Increase Font Size (+)"
+            style={{ padding: '4px 8px', fontSize: '11px' }}
+          >
+            <Plus size={12} /> A
+          </button>
+
+          {/* Quick scale preset buttons */}
+          {[100, 150, 200].map((preset) => (
+            <button
+              key={preset}
+              className="display-hud-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSetFontSize(preset);
+              }}
+              style={{
+                padding: '3px 7px',
+                fontSize: '10px',
+                background: currentScale === preset ? '#0284c7' : 'rgba(255, 255, 255, 0.05)',
+                borderColor: currentScale === preset ? '#38bdf8' : 'rgba(255, 255, 255, 0.12)',
+              }}
+              title={`Set font size to ${preset}%`}
+            >
+              {preset}%
+            </button>
+          ))}
+        </div>
+
         <button
           className="display-hud-btn"
           onClick={(e) => {
@@ -448,134 +529,24 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         </button>
       </div>
 
-      {/* Top Header Row */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        paddingBottom: '1.25rem',
-        zIndex: 10,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <div style={{
-            background: isOvertime ? '#ef4444' : '#3b82f6',
-            color: 'white',
-            padding: '6px 14px',
-            borderRadius: '8px',
-            fontWeight: 800,
-            fontSize: '13px',
-            letterSpacing: '0.08em',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: isOvertime ? '0 0 15px rgba(239, 68, 68, 0.5)' : '0 0 15px rgba(59, 130, 246, 0.4)'
-          }}>
-            <Radio size={15} />
-            {isOvertime ? 'OVERTIME ACTIVE' : 'LIVE COUNTDOWN'}
-          </div>
-
-          {/* Slot Step Indicator (e.g. Program 2 of 5) */}
-          {hasMultipleSlots && (
-            <div style={{
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.35)',
-              color: '#38bdf8',
-              padding: '5px 12px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 800,
-              letterSpacing: '0.05em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <FastForward size={13} />
-              PROGRAM {activeSlotIndex + 1} OF {slots.length}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
-              {timerState.title || (currentSlot ? currentSlot.title : 'Service Countdown')}
-            </span>
-            {currentSlot?.speaker && (
-              <span style={{ fontSize: '15px', fontWeight: 600, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <User size={13} /> {currentSlot.speaker}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Right Info: Live Local Clock & Next Slot Preview */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {/* Upcoming next slot pill preview in top right if not yet time up */}
-          {nextSlot && !showNextProgramBanner && (
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: '5px 12px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#94a3b8',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <span style={{ color: '#64748b', fontWeight: 700 }}>Next:</span>
-              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{nextSlot.title}</span>
-              <span style={{ color: '#64748b' }}>({Math.round(nextSlot.durationSec / 60)}m)</span>
-            </div>
-          )}
-
-          {timerState.status === 'paused' && (
-            <span style={{
-              background: 'rgba(234, 179, 8, 0.15)',
-              border: '1px solid rgba(234, 179, 8, 0.4)',
-              color: '#facc15',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 700,
-              letterSpacing: '0.06em'
-            }}>
-              PAUSED
-            </span>
-          )}
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '22px',
-            fontWeight: 700,
-            color: '#94a3b8',
-            fontVariantNumeric: 'tabular-nums'
-          }}>
-            <Clock size={20} />
-            <span>{clockStr}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Center Hero Countdown & Overtime Display */}
       <div style={{
-        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
         zIndex: 10,
+        width: '100%',
       }}>
-        {/* Prominent Overtime / State Badge */}
-        {isOvertime ? (
+        {/* Prominent Overtime Alert Badge (Shown only when overtime) */}
+        {isOvertime && (
           <div style={{
             background: '#dc2626',
             color: '#ffffff',
             padding: '10px 32px',
             borderRadius: '999px',
-            fontSize: 'clamp(18px, 2.5vw, 28px)',
+            fontSize: `clamp(18px, ${2.5 * Math.min(1.4, (timerState.fontSizeScale || 100) / 100)}vw, 32px)`,
             fontWeight: 900,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
@@ -589,43 +560,35 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             <AlertTriangle size={28} />
             TIME UP — OVERTIME
           </div>
-        ) : (
-          <div style={{
-            color: timerColor,
-            fontSize: '16px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            opacity: 0.85
-          }}>
-            {stateLabel}
-          </div>
         )}
 
         {/* GIANT COUNTDOWN DIGITS */}
-        <div style={{
-          fontSize: 'clamp(72px, 17vw, 210px)',
-          fontWeight: 900,
-          fontFamily: '"JetBrains Mono", "Inter", monospace',
-          color: timerColor,
-          lineHeight: 0.95,
-          letterSpacing: '-0.04em',
-          textShadow: timerShadow,
-          fontVariantNumeric: 'tabular-nums',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          userSelect: 'none',
-          transition: 'color 0.3s ease',
-        }}>
-          {formatTime(absSec, true)}
-        </div>
+        {(() => {
+          const fontScale = (timerState.fontSizeScale || 100) / 100;
+          return (
+            <div style={{
+              fontSize: `clamp(${Math.round(80 * fontScale)}px, ${20 * fontScale}vw, ${Math.round(280 * fontScale)}px)`,
+              fontWeight: 900,
+              fontFamily: '"JetBrains Mono", "Inter", monospace',
+              color: timerColor,
+              lineHeight: 0.92,
+              letterSpacing: '-0.04em',
+              textShadow: timerShadow,
+              fontVariantNumeric: 'tabular-nums',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              userSelect: 'none',
+              transition: 'color 0.3s ease, font-size 0.25s ease',
+              textAlign: 'center',
+            }}>
+              {formatTime(absSec, true)}
+            </div>
+          );
+        })()}
 
-        {/* Status Subtitle / Target details */}
+        {/* Status Subtitle / Target details (Stats) */}
+        {/*
         <div style={{
           marginTop: '1.75rem',
           fontSize: '15px',
@@ -646,14 +609,15 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             </>
           )}
         </div>
+        */}
 
         {/* Elegant Linear Progress Bar */}
         <div style={{
-          width: 'min(800px, 85vw)',
-          height: '10px',
+          width: 'min(920px, 88vw)',
+          height: `${Math.round(10 * Math.min(1.6, Math.max(0.8, (timerState.fontSizeScale || 100) / 100)))}px`,
           background: 'rgba(255, 255, 255, 0.08)',
           borderRadius: '999px',
-          marginTop: '2rem',
+          marginTop: '2.5rem',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.12)'
         }}>
@@ -669,9 +633,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           }} />
         </div>
       </div>
-
-      {/* Footer Info */}
-      <div style={{
+      {/* <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -686,7 +648,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           <span>Program Slot {activeSlotIndex + 1} of {slots.length}</span>
         )}
         <span>Confidence Monitor Feed • Real-Time Zero Drift Sync</span>
-      </div>
+      </div> */}
 
       {/* SLIDING NEXT PROGRAM BANNER (Bottom of the view page when time is up) */}
       <div style={{

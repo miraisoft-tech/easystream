@@ -24,7 +24,8 @@ import {
   SkipBack, 
   Bookmark,
   Pencil,
-  X
+  X,
+  Type
 } from 'lucide-react';
 
 interface TimerModalProps {
@@ -1143,6 +1144,66 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                 </div>
               </div>
 
+              {/* Time Counter Font Size Quick Setting (Tab 2) */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '12px',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Type size={14} color="#38bdf8" /> Time Counter Font Size
+                  </label>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    color: '#38bdf8',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                  }}>
+                    {timerState.fontSizeScale || 100}%
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+                  {[100, 125, 150, 175, 200, 250].map((scale) => {
+                    const isSelected = (timerState.fontSizeScale || 100) === scale;
+                    return (
+                      <button
+                        key={scale}
+                        type="button"
+                        className={`btn ${isSelected ? 'btn-primary' : ''}`}
+                        style={{
+                          fontSize: '11px',
+                          padding: '6px 4px',
+                          fontWeight: 700,
+                          justifyContent: 'center',
+                          background: isSelected ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
+                        }}
+                        onClick={() => onSetTimerConfig({ fontSizeScale: scale })}
+                      >
+                        {scale}%
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <input
+                  type="range"
+                  min={80}
+                  max={300}
+                  step={5}
+                  value={timerState.fontSizeScale || 100}
+                  onChange={(e) => onSetTimerConfig({ fontSizeScale: Number(e.target.value) })}
+                  style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }}
+                />
+              </div>
+
             </div>
           )}
 
@@ -1240,6 +1301,70 @@ export const TimerModal: React.FC<TimerModalProps> = ({
 
               {/* Confidence Display Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Time Counter Font Size Setting (Tab 3) */}
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Type size={14} color="#38bdf8" /> Time Counter Font Size
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        Scale the timer digits on the confidence monitor display
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: '#38bdf8',
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      padding: '3px 10px',
+                      borderRadius: '6px',
+                    }}>
+                      {timerState.fontSizeScale || 100}%
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+                    {[100, 125, 150, 175, 200, 250].map((scale) => {
+                      const isSelected = (timerState.fontSizeScale || 100) === scale;
+                      return (
+                        <button
+                          key={scale}
+                          type="button"
+                          className={`btn ${isSelected ? 'btn-primary' : ''}`}
+                          style={{
+                            fontSize: '11px',
+                            padding: '6px 4px',
+                            fontWeight: 700,
+                            justifyContent: 'center',
+                            background: isSelected ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
+                          }}
+                          onClick={() => onSetTimerConfig({ fontSizeScale: scale })}
+                        >
+                          {scale}%
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <input
+                    type="range"
+                    min={80}
+                    max={300}
+                    step={5}
+                    value={timerState.fontSizeScale || 100}
+                    onChange={(e) => onSetTimerConfig({ fontSizeScale: Number(e.target.value) })}
+                    style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                </div>
+
                 {/* Sliding Next Program Alert Toggle */}
                 <div style={{
                   display: 'flex',

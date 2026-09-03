@@ -10,7 +10,7 @@ interface DisplayViewProps {
 
 export const DisplayView: React.FC<DisplayViewProps> = ({
   state,
-  progress,
+  progress: _progress,
   isOverlay = false,
 }) => {
   const [fading, setFading] = useState(false);
@@ -238,7 +238,8 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
         </div>
       )}
 
-      {/* Top Header Badge (Hidden in Overlay / Lower-Third) */}
+      {/* Top Header Badge (Hidden on display) */}
+      {/*
       {!effectiveOverlay && theme.showReferenceBadge && !liveState.isBlackout && !liveState.isLogo && (
         <div style={{
           position: 'absolute',
@@ -262,6 +263,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
           </span>
         </div>
       )}
+      */}
 
       {/* Emergency State: Logo Display */}
       {liveState.isLogo && !liveState.isBlackout && (
@@ -362,7 +364,8 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
         </div>
       )}
 
-      {/* Bottom Progress Bar (for Fullscreen mode) */}
+      {/* Bottom Progress Bar (Hidden on display) */}
+      {/*
       {!effectiveOverlay && theme.showProgressBar && !liveState.isBlackout && !liveState.isLogo && (
         <div style={{
           position: 'absolute',
@@ -386,6 +389,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
           />
         </div>
       )}
+      */}
     </div>
   );
 };

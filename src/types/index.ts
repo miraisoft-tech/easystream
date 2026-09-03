@@ -107,6 +107,7 @@ export interface TimerState {
   activeSlotIndex: number;    // Index of the currently active program slot
   autoAdvance: boolean;       // Automatically advance and start the next slot on 00:00
   showNextProgramAlert: boolean; // Slide 'Next program: ...' banner on time up
+  fontSizeScale?: number;     // Font size percentage scale for timer display digits (e.g. 100, 150, 200)
 }
 
 export interface AppState {
