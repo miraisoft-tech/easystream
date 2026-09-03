@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AppState, WebSocketClientMessage, WebSocketServerMessage, PresentationTheme, LiveState, Schedule, ScheduleItem, LibraryItem, TimerState } from '../types';
+import { AppState, WebSocketClientMessage, WebSocketServerMessage, PresentationTheme, LiveState, Schedule, ScheduleItem, LibraryItem, TimerState, TimerSlot } from '../types';
 import { DEFAULT_THEME, DEFAULT_LIBRARY_ITEMS, DEFAULT_SCHEDULES, DEFAULT_TIMER_STATE } from '../data/defaults';
 
 const INITIAL_STATE: AppState = {
@@ -234,6 +234,38 @@ export function useWorshipSync() {
     send({ type: 'setTimerPrompt', message, visible });
   }, [send]);
 
+  const addTimerSlot = useCallback((slot: TimerSlot) => {
+    send({ type: 'addTimerSlot', slot });
+  }, [send]);
+
+  const updateTimerSlot = useCallback((id: string, slot: Partial<TimerSlot>) => {
+    send({ type: 'updateTimerSlot', id, slot });
+  }, [send]);
+
+  const deleteTimerSlot = useCallback((id: string) => {
+    send({ type: 'deleteTimerSlot', id });
+  }, [send]);
+
+  const reorderTimerSlots = useCallback((slots: TimerSlot[]) => {
+    send({ type: 'reorderTimerSlots', slots });
+  }, [send]);
+
+  const jumpToTimerSlot = useCallback((index: number, autoStart?: boolean) => {
+    send({ type: 'jumpToTimerSlot', index, autoStart });
+  }, [send]);
+
+  const nextTimerSlot = useCallback((autoStart?: boolean) => {
+    send({ type: 'nextTimerSlot', autoStart });
+  }, [send]);
+
+  const prevTimerSlot = useCallback((autoStart?: boolean) => {
+    send({ type: 'prevTimerSlot', autoStart });
+  }, [send]);
+
+  const setTimerSlots = useCallback((slots: TimerSlot[], activeIndex?: number) => {
+    send({ type: 'setTimerSlots', slots, activeIndex });
+  }, [send]);
+
   return {
     state,
     isConnected,
@@ -253,6 +285,14 @@ export function useWorshipSync() {
     adjustTimer,
     setTimerConfig,
     setTimerPrompt,
+    addTimerSlot,
+    updateTimerSlot,
+    deleteTimerSlot,
+    reorderTimerSlots,
+    jumpToTimerSlot,
+    nextTimerSlot,
+    prevTimerSlot,
+    setTimerSlots,
     loadScheduleItem,
     updateSchedule,
     saveSchedule,

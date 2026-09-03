@@ -7,11 +7,7 @@ import {
   AlignCenter, 
   AlignRight, 
   Sparkles, 
-  Tv, 
-  Eye,
-  Layers,
-  Sun,
-  Moon
+  Tv
 } from 'lucide-react';
 import { PresentationTheme } from '../types';
 import { THEME_PRESETS } from '../data/defaults';

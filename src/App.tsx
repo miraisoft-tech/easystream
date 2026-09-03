@@ -31,6 +31,14 @@ export const App: React.FC = () => {
     adjustTimer,
     setTimerConfig,
     setTimerPrompt,
+    addTimerSlot,
+    updateTimerSlot,
+    deleteTimerSlot,
+    reorderTimerSlots,
+    jumpToTimerSlot,
+    nextTimerSlot,
+    prevTimerSlot,
+    setTimerSlots,
     loadScheduleItem,
     updateSchedule,
     saveSchedule,
@@ -168,6 +176,14 @@ export const App: React.FC = () => {
         onAdjustTimer={adjustTimer}
         onSetTimerConfig={setTimerConfig}
         onSetTimerPrompt={setTimerPrompt}
+        onAddTimerSlot={addTimerSlot}
+        onUpdateTimerSlot={updateTimerSlot}
+        onDeleteTimerSlot={deleteTimerSlot}
+        onReorderTimerSlots={reorderTimerSlots}
+        onJumpToTimerSlot={jumpToTimerSlot}
+        onNextTimerSlot={nextTimerSlot}
+        onPrevTimerSlot={prevTimerSlot}
+        onSetTimerSlots={setTimerSlots}
       />
     </div>
   );

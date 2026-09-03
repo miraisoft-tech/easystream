@@ -6,14 +6,11 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Edit3, 
-  Sliders, 
   Clock, 
   Activity,
-  PlusCircle,
-  Eye,
   Check
 } from 'lucide-react';
-import { AppState, PresentationTheme } from '../types';
+import { AppState } from '../types';
 
 interface LiveConsoleProps {
   state: AppState;

@@ -206,18 +206,30 @@ const DEFAULT_SCHEDULES = [
   },
 ];
 
+const DEFAULT_TIMER_SLOTS = [
+  { id: "slot-1", title: "Opening & Welcome", durationSec: 300, speaker: "Host / Worship Leader" },
+  { id: "slot-2", title: "Praise & Worship", durationSec: 1200, speaker: "Worship Team" },
+  { id: "slot-3", title: "Announcements & Offering", durationSec: 420, speaker: "Pastoral Team" },
+  { id: "slot-4", title: "Sermon / Message", durationSec: 2100, speaker: "Lead Pastor" },
+  { id: "slot-5", title: "Altar Call & Closing Benediction", durationSec: 360, speaker: "Pastor" },
+];
+
 const DEFAULT_TIMER_STATE = {
   status: "idle",
-  durationSec: 3600, // 60 minutes default
-  remainingSec: 3600,
+  durationSec: 300, // Matches first slot (5 min)
+  remainingSec: 300,
   startedAt: null,
   targetEndTime: null,
   allowOvertime: true,
   warningThresholdSec: 300, // 5 min
   criticalThresholdSec: 60, // 1 min
-  title: "Service Countdown",
+  title: "Opening & Welcome",
   promptMessage: null,
   promptVisible: false,
+  slots: DEFAULT_TIMER_SLOTS,
+  activeSlotIndex: 0,
+  autoAdvance: false,
+  showNextProgramAlert: true,
 };
 
 function loadSavedStore() {
@@ -529,6 +541,112 @@ function setTimerConfig(config) {
 function setTimerPrompt(message, visible) {
   state.timerState.promptMessage = message && message.trim() ? message.trim() : null;
   state.timerState.promptVisible = Boolean(visible && state.timerState.promptMessage);
+  saveStoreToDisk();
+}
+
+function addTimerSlot(slot) {
+  if (!slot || !slot.title) return;
+  const newSlot = {
+    id: slot.id || `slot-${Date.now()}`,
+    title: slot.title.trim(),
+    durationSec: Math.max(10, Number(slot.durationSec) || 300),
+    speaker: slot.speaker ? slot.speaker.trim() : undefined,
+    notes: slot.notes ? slot.notes.trim() : undefined,
+    warningThresholdSec: slot.warningThresholdSec,
+  };
+  if (!Array.isArray(state.timerState.slots)) {
+    state.timerState.slots = [];
+  }
+  state.timerState.slots.push(newSlot);
+  saveStoreToDisk();
+}
+
+function updateTimerSlot(id, updates) {
+  if (!Array.isArray(state.timerState.slots)) return;
+  const index = state.timerState.slots.findIndex((s) => s.id === id);
+  if (index === -1) return;
+
+  state.timerState.slots[index] = {
+    ...state.timerState.slots[index],
+    ...updates,
+  };
+
+  // If we updated the currently active slot while idle, also update timer title & duration
+  if (index === state.timerState.activeSlotIndex) {
+    if (updates.title) state.timerState.title = updates.title;
+    if (updates.durationSec && state.timerState.status === "idle") {
+      state.timerState.durationSec = updates.durationSec;
+      state.timerState.remainingSec = updates.durationSec;
+    }
+  }
+  saveStoreToDisk();
+}
+
+function deleteTimerSlot(id) {
+  if (!Array.isArray(state.timerState.slots)) return;
+  state.timerState.slots = state.timerState.slots.filter((s) => s.id !== id);
+  if (state.timerState.activeSlotIndex >= state.timerState.slots.length) {
+    state.timerState.activeSlotIndex = Math.max(0, state.timerState.slots.length - 1);
+  }
+  saveStoreToDisk();
+}
+
+function reorderTimerSlots(slots) {
+  if (!Array.isArray(slots)) return;
+  state.timerState.slots = slots;
+  saveStoreToDisk();
+}
+
+function jumpToTimerSlot(index, autoStart = false) {
+  if (!Array.isArray(state.timerState.slots) || state.timerState.slots.length === 0) return;
+  const targetIndex = Math.max(0, Math.min(index, state.timerState.slots.length - 1));
+  const slot = state.timerState.slots[targetIndex];
+  if (!slot) return;
+
+  state.timerState.activeSlotIndex = targetIndex;
+  state.timerState.title = slot.title;
+  state.timerState.durationSec = slot.durationSec;
+  state.timerState.remainingSec = slot.durationSec;
+  state.timerState.warningThresholdSec = slot.warningThresholdSec || state.timerState.warningThresholdSec || 300;
+
+  if (autoStart) {
+    state.timerState.startedAt = Date.now();
+    state.timerState.targetEndTime = Date.now() + slot.durationSec * 1000;
+    state.timerState.status = "running";
+  } else {
+    state.timerState.status = "idle";
+    state.timerState.startedAt = null;
+    state.timerState.targetEndTime = null;
+  }
+  saveStoreToDisk();
+}
+
+function nextTimerSlot(autoStart = false) {
+  if (!Array.isArray(state.timerState.slots)) return;
+  const nextIdx = state.timerState.activeSlotIndex + 1;
+  if (nextIdx < state.timerState.slots.length) {
+    jumpToTimerSlot(nextIdx, autoStart);
+  }
+}
+
+function prevTimerSlot(autoStart = false) {
+  if (!Array.isArray(state.timerState.slots)) return;
+  const prevIdx = state.timerState.activeSlotIndex - 1;
+  if (prevIdx >= 0) {
+    jumpToTimerSlot(prevIdx, autoStart);
+  }
+}
+
+function setTimerSlots(slots, activeIndex = 0) {
+  if (!Array.isArray(slots)) return;
+  state.timerState.slots = slots;
+  state.timerState.activeSlotIndex = Math.max(0, Math.min(activeIndex, slots.length - 1));
+  const activeSlot = state.timerState.slots[state.timerState.activeSlotIndex];
+  if (activeSlot && state.timerState.status === "idle") {
+    state.timerState.title = activeSlot.title;
+    state.timerState.durationSec = activeSlot.durationSec;
+    state.timerState.remainingSec = activeSlot.durationSec;
+  }
   saveStoreToDisk();
 }
 
@@ -1077,6 +1195,30 @@ wss.on("connection", (ws) => {
         break;
       case "setTimerPrompt":
         setTimerPrompt(msg.message, msg.visible);
+        break;
+      case "addTimerSlot":
+        addTimerSlot(msg.slot);
+        break;
+      case "updateTimerSlot":
+        updateTimerSlot(msg.id, msg.slot);
+        break;
+      case "deleteTimerSlot":
+        deleteTimerSlot(msg.id);
+        break;
+      case "reorderTimerSlots":
+        reorderTimerSlots(msg.slots);
+        break;
+      case "jumpToTimerSlot":
+        jumpToTimerSlot(msg.index, msg.autoStart);
+        break;
+      case "nextTimerSlot":
+        nextTimerSlot(msg.autoStart);
+        break;
+      case "prevTimerSlot":
+        prevTimerSlot(msg.autoStart);
+        break;
+      case "setTimerSlots":
+        setTimerSlots(msg.slots, msg.activeIndex);
         break;
       case "loadScheduleItem":
         loadScheduleItem(msg.index);

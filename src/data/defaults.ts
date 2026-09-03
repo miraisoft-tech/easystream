@@ -1,17 +1,77 @@
-import { PresentationTheme, LibraryItem, Schedule, TimerState } from '../types';
+import { PresentationTheme, LibraryItem, Schedule, TimerState, TimerSlot } from '../types';
+
+export const DEFAULT_TIMER_SLOTS: TimerSlot[] = [
+  { id: 'slot-1', title: 'Opening & Welcome', durationSec: 300, speaker: 'Host / Worship Leader' },
+  { id: 'slot-2', title: 'Praise & Worship', durationSec: 1200, speaker: 'Worship Team' },
+  { id: 'slot-3', title: 'Announcements & Offering', durationSec: 420, speaker: 'Pastoral Team' },
+  { id: 'slot-4', title: 'Sermon / Message', durationSec: 2100, speaker: 'Lead Pastor' },
+  { id: 'slot-5', title: 'Altar Call & Closing Benediction', durationSec: 360, speaker: 'Pastor' },
+];
+
+export const TIMER_SCHEDULE_PRESETS: { name: string; description: string; slots: TimerSlot[] }[] = [
+  {
+    name: 'Sunday Morning Service (75 min)',
+    description: 'Standard Sunday morning service structure with worship, announcements, sermon and closing',
+    slots: [
+      { id: 'preset-sun-1', title: 'Pre-Service Countdown', durationSec: 300 },
+      { id: 'preset-sun-2', title: 'Opening & Praise', durationSec: 600, speaker: 'Worship Leader' },
+      { id: 'preset-sun-3', title: 'Deep Worship Set', durationSec: 900, speaker: 'Worship Team' },
+      { id: 'preset-sun-4', title: 'Announcements & Offering', durationSec: 480, speaker: 'Pastoral Staff' },
+      { id: 'preset-sun-5', title: 'Sermon / Message', durationSec: 2100, speaker: 'Pastor' },
+      { id: 'preset-sun-6', title: 'Altar & Benediction', durationSec: 420, speaker: 'Pastor' },
+    ],
+  },
+  {
+    name: 'Midweek Prayer & Bible Study (60 min)',
+    description: 'Midweek service with praise, focused prayer sessions, and scriptural teaching',
+    slots: [
+      { id: 'preset-mid-1', title: 'Opening Prayer', durationSec: 300 },
+      { id: 'preset-mid-2', title: 'Worship & Exhortation', durationSec: 600 },
+      { id: 'preset-mid-3', title: 'Corporate Intercession', durationSec: 900 },
+      { id: 'preset-mid-4', title: 'Bible Teaching / Exegesis', durationSec: 1500 },
+      { id: 'preset-mid-5', title: 'Closing Fellowship', durationSec: 300 },
+    ],
+  },
+  {
+    name: 'Youth / Revival Night (90 min)',
+    description: 'High energy praise, testimony, message and prolonged ministry time',
+    slots: [
+      { id: 'preset-yth-1', title: 'Pre-Service Hangout Countdown', durationSec: 300 },
+      { id: 'preset-yth-2', title: 'High Energy Praise', durationSec: 900 },
+      { id: 'preset-yth-3', title: 'Testimony & Games', durationSec: 600 },
+      { id: 'preset-yth-4', title: 'Youth Message', durationSec: 1800 },
+      { id: 'preset-yth-5', title: 'Altar & Extended Worship', durationSec: 1500 },
+      { id: 'preset-yth-6', title: 'Wrap Up', durationSec: 300 },
+    ],
+  },
+  {
+    name: 'Conference / Seminar Session (45 min)',
+    description: 'Keynote or breakout session with presentation and Q&A',
+    slots: [
+      { id: 'preset-conf-1', title: 'Session Intro & Speaker Bio', durationSec: 180 },
+      { id: 'preset-conf-2', title: 'Keynote Presentation', durationSec: 1800 },
+      { id: 'preset-conf-3', title: 'Audience Q&A', durationSec: 600 },
+      { id: 'preset-conf-4', title: 'Closing Remarks & Next Session', durationSec: 120 },
+    ],
+  },
+];
 
 export const DEFAULT_TIMER_STATE: TimerState = {
   status: 'idle',
-  durationSec: 3600, // 60 minutes default
-  remainingSec: 3600,
+  durationSec: 300, // Matches first slot (5 min)
+  remainingSec: 300,
   startedAt: null,
   targetEndTime: null,
   allowOvertime: true,
   warningThresholdSec: 300, // 5 min
   criticalThresholdSec: 60, // 1 min
-  title: 'Service Countdown',
+  title: 'Opening & Welcome',
   promptMessage: null,
   promptVisible: false,
+  slots: DEFAULT_TIMER_SLOTS,
+  activeSlotIndex: 0,
+  autoAdvance: false,
+  showNextProgramAlert: true,
 };
 
 export const DEFAULT_THEME: PresentationTheme = {

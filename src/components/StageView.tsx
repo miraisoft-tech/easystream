@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppState } from '../types';
-import { Clock, Mic2, Bell } from 'lucide-react';
+import { Clock, Mic2 } from 'lucide-react';
 
 interface StageViewProps {
   state: AppState;

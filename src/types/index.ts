@@ -80,6 +80,15 @@ export interface LiveState {
   quickAlert: string | null;
 }
 
+export interface TimerSlot {
+  id: string;
+  title: string;
+  durationSec: number;        // Slot duration in seconds
+  speaker?: string;           // Optional presenter / speaker name
+  notes?: string;             // Optional notes
+  warningThresholdSec?: number;
+}
+
 export interface TimerState {
   status: 'idle' | 'running' | 'paused';
   durationSec: number;        // Configured countdown duration in seconds (e.g. 3600 for 60 min)
@@ -92,6 +101,12 @@ export interface TimerState {
   title: string;              // e.g. "Sermon Countdown" or "Service Begins In"
   promptMessage: string | null;// Slide-in message displayed below the display
   promptVisible: boolean;     // Whether prompt message is visible
+  
+  // Program Schedule / Rundown Slots
+  slots: TimerSlot[];         // Ordered list of program slots
+  activeSlotIndex: number;    // Index of the currently active program slot
+  autoAdvance: boolean;       // Automatically advance and start the next slot on 00:00
+  showNextProgramAlert: boolean; // Slide 'Next program: ...' banner on time up
 }
 
 export interface AppState {
@@ -140,6 +155,14 @@ export type WebSocketClientMessage =
   | { type: 'adjustTimer'; deltaSec: number }
   | { type: 'setTimerConfig'; config: Partial<TimerState> }
   | { type: 'setTimerPrompt'; message: string | null; visible: boolean }
+  | { type: 'addTimerSlot'; slot: TimerSlot }
+  | { type: 'updateTimerSlot'; id: string; slot: Partial<TimerSlot> }
+  | { type: 'deleteTimerSlot'; id: string }
+  | { type: 'reorderTimerSlots'; slots: TimerSlot[] }
+  | { type: 'jumpToTimerSlot'; index: number; autoStart?: boolean }
+  | { type: 'nextTimerSlot'; autoStart?: boolean }
+  | { type: 'prevTimerSlot'; autoStart?: boolean }
+  | { type: 'setTimerSlots'; slots: TimerSlot[]; activeIndex?: number }
   | { type: 'loadScheduleItem'; index: number }
   | { type: 'updateSchedule'; items: ScheduleItem[] }
   | { type: 'saveSchedule'; schedule: Schedule }

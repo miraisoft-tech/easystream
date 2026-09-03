@@ -12,10 +12,9 @@ import {
   ListPlus, 
   Check, 
   X,
-  Layers,
   Globe
 } from 'lucide-react';
-import { LibraryItem, ScheduleItem, AppState } from '../types';
+import { LibraryItem } from '../types';
 
 interface LibraryModalProps {
   isOpen: boolean;

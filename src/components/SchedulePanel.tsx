@@ -3,7 +3,6 @@ import {
   ListOrdered, 
   Plus, 
   FolderDown, 
-  FolderUp, 
   Trash2, 
   ChevronUp, 
   ChevronDown, 
@@ -14,7 +13,7 @@ import {
   Save,
   Check
 } from 'lucide-react';
-import { Schedule, ScheduleItem, LibraryItem } from '../types';
+import { Schedule, ScheduleItem } from '../types';
 
 interface SchedulePanelProps {
   schedule: ScheduleItem[];

@@ -5,14 +5,12 @@ import {
   Mic2, 
   Bell, 
   BookOpen, 
-  Sparkles, 
   RotateCcw, 
   ExternalLink,
   Circle,
   Radio,
   Image as ImageIcon,
   Search,
-  Globe,
   Clock
 } from 'lucide-react';
 import { LiveState, TimerState } from '../types';

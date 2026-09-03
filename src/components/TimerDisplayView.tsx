@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TimerState, LiveState } from '../types';
-import { Clock, AlertTriangle, MessageSquare, Volume2, Radio, Bell } from 'lucide-react';
+import { TimerState, LiveState, TimerSlot } from '../types';
+import { Clock, AlertTriangle, MessageSquare, Radio, Bell, Sparkles, FastForward, User } from 'lucide-react';
 
 interface TimerDisplayViewProps {
   timerState: TimerState;
@@ -10,7 +10,6 @@ interface TimerDisplayViewProps {
 
 export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   timerState,
-  liveState,
   isOverlay = false,
 }) => {
   const [now, setNow] = useState(Date.now());
@@ -37,6 +36,16 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   const isOvertime = currentSec < 0;
   const isTimeUp = currentSec <= 0;
   const absSec = Math.abs(currentSec);
+
+  // Slots calculation
+  const slots: TimerSlot[] = timerState.slots || [];
+  const activeSlotIndex = typeof timerState.activeSlotIndex === 'number' ? timerState.activeSlotIndex : 0;
+  const currentSlot = slots[activeSlotIndex] || null;
+  const nextSlot = activeSlotIndex + 1 < slots.length ? slots[activeSlotIndex + 1] : null;
+  const hasMultipleSlots = slots.length > 1;
+
+  // Should display the bottom sliding "Next Program" banner when time is up
+  const showNextProgramBanner = isTimeUp && nextSlot !== null && timerState.showNextProgramAlert !== false;
 
   // Format MM:SS or HH:MM:SS
   const formatTime = (totalSec: number, showSign = false) => {
@@ -94,6 +103,11 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   const promptText = timerState.promptMessage || '';
   const promptScrollDuration = Math.max(10, Math.round(promptText.length * 0.35));
 
+  const nextProgramText = nextSlot
+    ? `Next program: ${nextSlot.title}${nextSlot.speaker ? ` (${nextSlot.speaker})` : ''} • ${Math.round(nextSlot.durationSec / 60)} min`
+    : '';
+  const nextProgramScrollDuration = Math.max(12, Math.round(nextProgramText.length * 0.3));
+
   // If overlay mode (for vMix/OBS alpha capture)
   if (isOverlay) {
     return (
@@ -113,7 +127,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
       }}>
         {/* Compact overlay timer badge */}
         <div style={{
-          background: 'rgba(10, 14, 23, 0.88)',
+          background: 'rgba(10, 14, 23, 0.92)',
           backdropFilter: 'blur(16px)',
           border: `2px solid ${timerColor}`,
           borderRadius: '16px',
@@ -123,6 +137,8 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           gap: '24px',
           boxShadow: timerShadow,
           animation: isOvertime ? 'timerPulse 1.2s infinite ease-in-out' : 'none',
+          marginBottom: showNextProgramBanner ? '12px' : '0',
+          transition: 'margin-bottom 0.3s ease',
         }}>
           <div>
             <div style={{
@@ -136,7 +152,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
               gap: '6px'
             }}>
               {isOvertime ? <AlertTriangle size={13} color="#ef4444" /> : <Clock size={13} />}
-              {isOvertime ? 'TIME UP • OVERTIME' : timerState.title}
+              {isOvertime ? 'TIME UP • OVERTIME' : (timerState.title || (currentSlot ? currentSlot.title : 'Countdown'))}
             </div>
             <div style={{
               fontSize: '48px',
@@ -165,15 +181,82 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
           )}
         </div>
 
-        {/* Slide-below Prompt message in overlay */}
+        {/* Sliding Next Program Ticker in Overlay */}
         <div style={{
           position: 'fixed',
           bottom: '1rem',
           left: '50%',
+          transform: showNextProgramBanner
+            ? 'translateX(-50%) translateY(0)'
+            : 'translateX(-50%) translateY(180%)',
+          transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+          zIndex: 110,
+          pointerEvents: 'none',
+          width: 'min(640px, 92vw)',
+          maxWidth: '100%',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.96), rgba(15, 23, 42, 0.98))',
+            border: '2px solid #38bdf8',
+            borderRadius: '14px',
+            padding: '10px 18px',
+            color: '#ffffff',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              background: '#0284c7',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 900,
+              letterSpacing: '0.08em',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              flexShrink: 0,
+            }}>
+              <FastForward size={12} /> NEXT PROGRAM
+            </div>
+            <div style={{
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              fontSize: '15px',
+              fontWeight: 700,
+              maskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)',
+            }}>
+              <span
+                key={nextProgramText}
+                style={{
+                  display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                  paddingLeft: '100%',
+                  animation: `promptScroll ${nextProgramScrollDuration}s linear infinite`,
+                  willChange: 'transform',
+                }}
+              >
+                {nextProgramText}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Slide-below Prompt message in overlay */}
+        <div style={{
+          position: 'fixed',
+          bottom: showNextProgramBanner ? '5rem' : '1rem',
+          left: '50%',
           transform: timerState.promptVisible && timerState.promptMessage
             ? 'translateX(-50%) translateY(0)'
-            : 'translateX(-50%) translateY(160%)',
-          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            : 'translateX(-50%) translateY(200%)',
+          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.3s ease',
           zIndex: 100,
           pointerEvents: 'none',
           width: 'min(560px, 90vw)',
@@ -239,14 +322,14 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
       height: '100vh',
       backgroundColor: '#05070c',
       backgroundImage: isOvertime
-        ? 'radial-gradient(ellipse at center, rgba(153, 27, 27, 0.25) 0%, rgba(5, 7, 12, 1) 75%)'
-        : 'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.6) 0%, rgba(5, 7, 12, 1) 85%)',
+        ? 'radial-gradient(ellipse at center, rgba(153, 27, 27, 0.28) 0%, rgba(5, 7, 12, 1) 75%)'
+        : 'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.65) 0%, rgba(5, 7, 12, 1) 85%)',
       color: '#ffffff',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '2.5rem 3.5rem',
+      padding: '2.25rem 3.5rem',
       boxSizing: 'border-box',
       position: 'relative',
       overflow: 'hidden',
@@ -260,7 +343,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         paddingBottom: '1.25rem',
         zIndex: 10,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div style={{
             background: isOvertime ? '#ef4444' : '#3b82f6',
             color: 'white',
@@ -277,13 +360,60 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
             <Radio size={15} />
             {isOvertime ? 'OVERTIME ACTIVE' : 'LIVE COUNTDOWN'}
           </div>
-          <span style={{ fontSize: '22px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
-            {timerState.title || 'Service Countdown'}
-          </span>
+
+          {/* Slot Step Indicator (e.g. Program 2 of 5) */}
+          {hasMultipleSlots && (
+            <div style={{
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 800,
+              letterSpacing: '0.05em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <FastForward size={13} />
+              PROGRAM {activeSlotIndex + 1} OF {slots.length}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <span style={{ fontSize: '24px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
+              {timerState.title || (currentSlot ? currentSlot.title : 'Service Countdown')}
+            </span>
+            {currentSlot?.speaker && (
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <User size={13} /> {currentSlot.speaker}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Right Info: Live Local Clock & Status */}
+        {/* Right Info: Live Local Clock & Next Slot Preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          {/* Upcoming next slot pill preview in top right if not yet time up */}
+          {nextSlot && !showNextProgramBanner && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#94a3b8',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span style={{ color: '#64748b', fontWeight: 700 }}>Next:</span>
+              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{nextSlot.title}</span>
+              <span style={{ color: '#64748b' }}>({Math.round(nextSlot.durationSec / 60)}m)</span>
+            </div>
+          )}
+
           {timerState.status === 'paused' && (
             <span style={{
               background: 'rgba(234, 179, 8, 0.15)',
@@ -438,11 +568,13 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         fontWeight: 600,
       }}>
         <span>EasyPresenter Studio Timer Display</span>
-        <span>Confidence Monitor Feed • 100% Real-Time Zero Drift Sync</span>
+        {hasMultipleSlots && (
+          <span>Program Slot {activeSlotIndex + 1} of {slots.length}</span>
+        )}
+        <span>Confidence Monitor Feed • Real-Time Zero Drift Sync</span>
       </div>
 
-      {/* SLIDE-BELOW PROMPT MESSAGE BANNER */}
-      {/* Slides up smoothly from the bottom of the page */}
+      {/* SLIDING NEXT PROGRAM BANNER (Bottom of the view page when time is up) */}
       <div style={{
         position: 'fixed',
         bottom: 0,
@@ -451,10 +583,112 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         display: 'flex',
         justifyContent: 'center',
         padding: '0 2rem 2rem 2rem',
+        transform: showNextProgramBanner
+          ? 'translateY(0)'
+          : 'translateY(140%)',
+        transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        zIndex: 900,
+        pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 'min(980px, 94vw)',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(30, 27, 75, 0.98))',
+          backdropFilter: 'blur(25px)',
+          border: '2px solid #38bdf8',
+          borderRadius: '20px',
+          padding: '1.25rem 2.25rem',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 35px rgba(56, 189, 248, 0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px',
+          color: '#ffffff',
+          overflow: 'hidden',
+          animation: 'bannerPulse 2s infinite ease-in-out',
+        }}>
+          {/* Left Attention Badge */}
+          <div style={{
+            padding: '10px 16px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexShrink: 0,
+            boxShadow: '0 0 15px rgba(2, 132, 199, 0.6)',
+          }}>
+            <FastForward size={20} color="#ffffff" />
+            <span style={{
+              fontSize: '13px',
+              fontWeight: 900,
+              letterSpacing: '0.12em',
+              color: '#ffffff',
+              textTransform: 'uppercase',
+            }}>
+              NEXT PROGRAM
+            </span>
+          </div>
+
+          {/* Marquee Next Program Content */}
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{
+              fontSize: 'clamp(22px, 3vw, 36px)',
+              fontWeight: 800,
+              lineHeight: 1.2,
+              color: '#f8fafc',
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.6)',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              width: '100%',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%)',
+            }}>
+              <span
+                key={nextProgramText}
+                style={{
+                  display: 'inline-block',
+                  whiteSpace: 'nowrap',
+                  paddingLeft: '100%',
+                  animation: `promptScroll ${nextProgramScrollDuration}s linear infinite`,
+                  willChange: 'transform',
+                }}
+              >
+                {nextProgramText}
+              </span>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: '#38bdf8',
+            fontSize: '14px',
+            fontWeight: 800,
+            flexShrink: 0,
+            background: 'rgba(56, 189, 248, 0.12)',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+          }}>
+            <Sparkles size={16} />
+            <span>STANDBY</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SLIDE-BELOW PROMPT MESSAGE BANNER (Manual Operator Messages) */}
+      <div style={{
+        position: 'fixed',
+        bottom: showNextProgramBanner ? '6.5rem' : '0',
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 2rem 2rem 2rem',
         transform: timerState.promptVisible && timerState.promptMessage
           ? 'translateY(0)'
-          : 'translateY(120%)',
-        transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+          : 'translateY(160%)',
+        transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.4s ease',
         zIndex: 1000,
         pointerEvents: 'none',
       }}>
@@ -529,7 +763,7 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         </div>
       </div>
 
-      {/* Global CSS for subtle strobe & pulse animations */}
+      {/* Global CSS for subtle strobe, marquee & pulse animations */}
       <style>{`
         @keyframes timerPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
@@ -538,6 +772,10 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
         @keyframes timerStrobe {
           0% { transform: scale(1); filter: brightness(1); }
           100% { transform: scale(1.03); filter: brightness(1.18); }
+        }
+        @keyframes bannerPulse {
+          0%, 100% { border-color: #38bdf8; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(56, 189, 248, 0.35); }
+          50% { border-color: #f59e0b; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 40px rgba(245, 158, 11, 0.45); }
         }
         @keyframes promptScroll {
           0% { transform: translateX(0%); }
