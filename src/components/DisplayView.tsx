@@ -53,6 +53,42 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
     }
   }, []);
 
+  // Auto Fullscreen on mount & on first user gesture
+  useEffect(() => {
+    // 1. Try immediate auto fullscreen on mount
+    const tryImmediate = async () => {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch {
+        // Browser requires user gesture; captured on first click below
+      }
+    };
+    tryImmediate();
+
+    // 2. Trigger fullscreen on first click or pointerdown anywhere
+    const handleFirstGesture = async () => {
+      if (!document.fullscreenElement) {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    };
+
+    window.addEventListener('click', handleFirstGesture, { once: true });
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('pointerdown', handleFirstGesture);
+    };
+  }, []);
+
   // Keyboard Shortcuts ('F' for Fullscreen)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -182,9 +218,16 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
 
       {/* Initial Hint Toast (fades after 4s) */}
       {showHintToast && !isFullscreen && (
-        <div className="display-hint-toast">
+        <div
+          className="display-hint-toast"
+          style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
+        >
           <Tv size={14} color="#38bdf8" />
-          <span>Double-click or press <strong>F</strong> for borderless full screen</span>
+          <span>Click anywhere or press <strong>F</strong> for borderless full screen</span>
         </div>
       )}
 

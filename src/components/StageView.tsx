@@ -49,6 +49,40 @@ export const StageView: React.FC<StageViewProps> = ({ state, progress }) => {
     }
   }, []);
 
+  // Auto Fullscreen on mount & on first user gesture
+  useEffect(() => {
+    const tryImmediate = async () => {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch {
+        // Handled on first click below
+      }
+    };
+    tryImmediate();
+
+    const handleFirstGesture = async () => {
+      if (!document.fullscreenElement) {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    };
+
+    window.addEventListener('click', handleFirstGesture, { once: true });
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('pointerdown', handleFirstGesture);
+    };
+  }, []);
+
   // Keyboard Shortcuts ('F' for Fullscreen)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
