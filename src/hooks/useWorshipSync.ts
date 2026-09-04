@@ -31,12 +31,13 @@ const INITIAL_STATE: AppState = {
 const CACHE_KEY = 'easystream_worship_state';
 
 function getInitialCachedState(): AppState {
+  let baseState: AppState = INITIAL_STATE;
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed && typeof parsed === 'object') {
-        return {
+        baseState = {
           ...INITIAL_STATE,
           ...parsed,
           timerState: {
@@ -57,7 +58,58 @@ function getInitialCachedState(): AppState {
   } catch (err) {
     console.warn('[WorshipSync] Failed to read cached state:', err);
   }
-  return INITIAL_STATE;
+
+  // Check URL parameters for direct schedule slot jump and immediate start
+  try {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const scheduleParam = searchParams.get('schedule') || searchParams.get('slot');
+      if (scheduleParam) {
+        const slots = baseState.timerState.slots || DEFAULT_TIMER_STATE.slots || [];
+        let targetIndex = -1;
+        const num = parseInt(scheduleParam, 10);
+        if (!isNaN(num)) {
+          if (num >= 1 && num <= slots.length) {
+            targetIndex = num - 1;
+          } else if (num === 0 && slots.length > 0) {
+            targetIndex = 0;
+          }
+        }
+        if (targetIndex === -1) {
+          const idIdx = slots.findIndex((s) => s.id === scheduleParam);
+          if (idIdx !== -1) targetIndex = idIdx;
+        }
+        if (targetIndex === -1) {
+          const lowerQuery = scheduleParam.toLowerCase().trim();
+          const titleIdx = slots.findIndex((s) => s.title.toLowerCase().includes(lowerQuery));
+          if (titleIdx !== -1) targetIndex = titleIdx;
+        }
+
+        if (targetIndex !== -1 && slots[targetIndex]) {
+          const slot = slots[targetIndex];
+          const now = Date.now();
+          baseState = {
+            ...baseState,
+            timerState: {
+              ...baseState.timerState,
+              activeSlotIndex: targetIndex,
+              title: slot.title,
+              durationSec: slot.durationSec,
+              remainingSec: slot.durationSec,
+              warningThresholdSec: slot.warningThresholdSec || baseState.timerState.warningThresholdSec || 300,
+              status: 'running',
+              startedAt: now,
+              targetEndTime: now + slot.durationSec * 1000,
+            }
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[WorshipSync] Error evaluating URL schedule param on init:', e);
+  }
+
+  return baseState;
 }
 
 export function useWorshipSync() {
@@ -66,12 +118,15 @@ export function useWorshipSync() {
   const [isSynced, setIsSynced] = useState(false);
   const [progress, setProgress] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
+  const pendingQueueRef = useRef<WebSocketClientMessage[]>([]);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Send message over WebSocket
+  // Send message over WebSocket (or queue until open)
   const send = useCallback((msg: WebSocketClientMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
+    } else {
+      pendingQueueRef.current.push(msg);
     }
   }, []);
 
@@ -108,6 +163,14 @@ export function useWorshipSync() {
           if (unmounted) return;
           setIsConnected(true);
           console.log(`[WorshipSync] Connected to presentation server at ${url}`);
+
+          // Flush any pending messages queued while connecting
+          while (pendingQueueRef.current.length > 0) {
+            const pendingMsg = pendingQueueRef.current.shift();
+            if (pendingMsg) {
+              ws.send(JSON.stringify(pendingMsg));
+            }
+          }
         };
 
         ws.onmessage = (event) => {
@@ -291,6 +354,28 @@ export function useWorshipSync() {
 
   const jumpToTimerSlot = useCallback((index: number, autoStart?: boolean) => {
     send({ type: 'jumpToTimerSlot', index, autoStart });
+    setState(prev => {
+      const slots = prev.timerState.slots || [];
+      if (slots.length === 0) return prev;
+      const targetIndex = Math.max(0, Math.min(index, slots.length - 1));
+      const slot = slots[targetIndex];
+      if (!slot) return prev;
+      const now = Date.now();
+      return {
+        ...prev,
+        timerState: {
+          ...prev.timerState,
+          activeSlotIndex: targetIndex,
+          title: slot.title,
+          durationSec: slot.durationSec,
+          remainingSec: slot.durationSec,
+          warningThresholdSec: slot.warningThresholdSec || prev.timerState.warningThresholdSec,
+          status: autoStart ? 'running' : 'idle',
+          startedAt: autoStart ? now : null,
+          targetEndTime: autoStart ? now + slot.durationSec * 1000 : null,
+        }
+      };
+    });
   }, [send]);
 
   const nextTimerSlot = useCallback((autoStart?: boolean) => {
