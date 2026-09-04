@@ -67,7 +67,15 @@ export const App: React.FC = () => {
   }
 
   if (pathname === '/timer' || pathname === '/timer.html' || pathname === '/countdown' || pathname === '/countdown.html') {
-    return <TimerDisplayView timerState={state.timerState} liveState={state.liveState} isOverlay={isOverlayMode} onSetTimerConfig={setTimerConfig} />;
+    return (
+      <TimerDisplayView
+        timerState={state.timerState}
+        liveState={state.liveState}
+        isOverlay={isOverlayMode}
+        onSetTimerConfig={setTimerConfig}
+        onJumpToTimerSlot={jumpToTimerSlot}
+      />
+    );
   }
 
   // Handle adding an item from library to the active schedule

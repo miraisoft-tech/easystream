@@ -28,9 +28,42 @@ const INITIAL_STATE: AppState = {
   library: DEFAULT_LIBRARY_ITEMS,
 };
 
+const CACHE_KEY = 'easystream_worship_state';
+
+function getInitialCachedState(): AppState {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          ...INITIAL_STATE,
+          ...parsed,
+          timerState: {
+            ...INITIAL_STATE.timerState,
+            ...(parsed.timerState || {}),
+          },
+          liveState: {
+            ...INITIAL_STATE.liveState,
+            ...(parsed.liveState || {}),
+          },
+          theme: {
+            ...INITIAL_STATE.theme,
+            ...(parsed.theme || {}),
+          },
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[WorshipSync] Failed to read cached state:', err);
+  }
+  return INITIAL_STATE;
+}
+
 export function useWorshipSync() {
-  const [state, setState] = useState<AppState>(INITIAL_STATE);
+  const [state, setState] = useState<AppState>(getInitialCachedState);
   const [isConnected, setIsConnected] = useState(false);
+  const [isSynced, setIsSynced] = useState(false);
   const [progress, setProgress] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,6 +116,12 @@ export function useWorshipSync() {
             const data: WebSocketServerMessage = JSON.parse(event.data);
             if (data.type === 'state') {
               setState(data.state);
+              setIsSynced(true);
+              try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data.state));
+              } catch {
+                // Ignore localStorage errors
+              }
             }
           } catch (e) {
             console.error('[WorshipSync] Failed to parse message:', e);
@@ -269,6 +308,7 @@ export function useWorshipSync() {
   return {
     state,
     isConnected,
+    isSynced,
     progress,
     send,
     jumpTo,

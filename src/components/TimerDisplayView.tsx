@@ -7,18 +7,68 @@ interface TimerDisplayViewProps {
   liveState?: LiveState;
   isOverlay?: boolean;
   onSetTimerConfig?: (config: Partial<TimerState>) => void;
+  onJumpToTimerSlot?: (index: number, autoStart?: boolean) => void;
 }
 
 export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
   timerState,
   isOverlay = false,
   onSetTimerConfig,
+  onJumpToTimerSlot,
 }) => {
   const [now, setNow] = useState(Date.now());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [isMouseIdle, setIsMouseIdle] = useState(false);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const appliedScheduleParamRef = useRef<string | null>(null);
+
+  // Jump to specific timer schedule slot and autostart countdown when URL parameter ?schedule= or ?slot= is provided
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const scheduleParam = searchParams.get('schedule') || searchParams.get('slot');
+
+    if (!scheduleParam || !onJumpToTimerSlot) return;
+    if (appliedScheduleParamRef.current === scheduleParam) return;
+
+    const slots = timerState.slots || [];
+    if (slots.length === 0) return;
+
+    let targetIndex = -1;
+
+    // Check if numeric (1-based index e.g. 1, 2, 3...)
+    const num = parseInt(scheduleParam, 10);
+    if (!isNaN(num)) {
+      if (num >= 1 && num <= slots.length) {
+        targetIndex = num - 1;
+      } else if (num === 0 && slots.length > 0) {
+        targetIndex = 0;
+      }
+    }
+
+    // Check if slot ID match
+    if (targetIndex === -1) {
+      const idIdx = slots.findIndex((s) => s.id === scheduleParam);
+      if (idIdx !== -1) {
+        targetIndex = idIdx;
+      }
+    }
+
+    // Check if slot title match (case-insensitive fuzzy search)
+    if (targetIndex === -1) {
+      const lowerQuery = scheduleParam.toLowerCase().trim();
+      const titleIdx = slots.findIndex((s) => s.title.toLowerCase().includes(lowerQuery));
+      if (titleIdx !== -1) {
+        targetIndex = titleIdx;
+      }
+    }
+
+    if (targetIndex !== -1) {
+      appliedScheduleParamRef.current = scheduleParam;
+      // Autostart immediately once page is loaded
+      onJumpToTimerSlot(targetIndex, true);
+    }
+  }, [timerState.slots, onJumpToTimerSlot]);
 
   const currentScale = timerState.fontSizeScale || 100;
 

@@ -25,7 +25,8 @@ import {
   Bookmark,
   Pencil,
   X,
-  Type
+  Type,
+  Link2
 } from 'lucide-react';
 
 interface TimerModalProps {
@@ -87,6 +88,20 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   const [editSlotMins, setEditSlotMins] = useState(15);
   const [editSlotWarningSec, setEditSlotWarningSec] = useState<number>(300);
   const [editSlotSpeaker, setEditSlotSpeaker] = useState('');
+  const [copiedSlotId, setCopiedSlotId] = useState<string | null>(null);
+
+  const handleCopySlotUrl = (slot: TimerSlot, index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/timer?schedule=${index + 1}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedSlotId(slot.id);
+      setTimeout(() => {
+        setCopiedSlotId(null);
+      }, 2000);
+    }).catch((err) => {
+      console.error('Failed to copy URL:', err);
+    });
+  };
 
   const startEditingSlot = (slot: TimerSlot) => {
     setEditingSlotId(slot.id);
@@ -669,7 +684,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                     Service Rundown Schedule
                   </div>
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    Total runtime: <strong style={{ color: '#38bdf8' }}>{totalScheduleMins} minutes</strong> ({Math.floor(totalScheduleMins/60)}h {totalScheduleMins%60}m) • {slots.length} sequential program slots
+                    Total runtime: <strong style={{ color: '#38bdf8' }}>{totalScheduleMins} minutes</strong> ({Math.floor(totalScheduleMins/60)}h {totalScheduleMins%60}m) • {slots.length} sequential program slots • <span style={{ color: '#38bdf8' }}>Direct URLs available (autostarts on load)</span>
                   </div>
                 </div>
 
@@ -1010,9 +1025,26 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                               color: isActive ? '#05070c' : '#e2e8f0',
                             }}
                             onClick={() => onJumpToTimerSlot && onJumpToTimerSlot(index, true)}
-                            title="Make active and start timer"
+                            title="Make active and start countdown"
                           >
                             <Play size={12} fill={isActive ? '#05070c' : 'currentColor'} /> {isActive ? 'Live' : 'Jump'}
+                          </button>
+
+                          {/* Copy Direct Access URL */}
+                          <button
+                            type="button"
+                            className="btn btn-icon"
+                            onClick={(e) => handleCopySlotUrl(slot, index, e)}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              color: copiedSlotId === slot.id ? '#10b981' : '#38bdf8',
+                              background: copiedSlotId === slot.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                              borderColor: copiedSlotId === slot.id ? '#10b981' : undefined,
+                            }}
+                            title={copiedSlotId === slot.id ? 'URL Copied to clipboard!' : `Copy Direct URL: /timer?schedule=${index + 1} (Autostarts on load)`}
+                          >
+                            {copiedSlotId === slot.id ? <Check size={13} /> : <Link2 size={13} />}
                           </button>
 
                           {/* Edit Slot */}
@@ -1020,7 +1052,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                             type="button"
                             className="btn btn-icon"
                             onClick={() => startEditingSlot(slot)}
-                            style={{ width: '28px', height: '28px', color: '#38bdf8' }}
+                            style={{ width: '28px', height: '28px', color: '#94a3b8' }}
                             title="Edit Slot"
                           >
                             <Pencil size={13} />
