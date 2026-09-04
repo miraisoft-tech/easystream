@@ -10,10 +10,16 @@ import { DisplayView } from './components/DisplayView';
 import { StageView } from './components/StageView';
 import { TimerDisplayView } from './components/TimerDisplayView';
 import { TimerModal } from './components/TimerModal';
+import { SessionModal } from './components/SessionModal';
 import { LibraryItem, ScheduleItem } from './types';
 
 export const App: React.FC = () => {
   const {
+    sessionId,
+    switchSession,
+    saveCurrentSession,
+    hasPromptedSession,
+    setHasPromptedSession,
     state,
     isConnected,
     progress,
@@ -52,6 +58,7 @@ export const App: React.FC = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isOnlineSearchOpen, setIsOnlineSearchOpen] = useState(false);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
 
   // Simple client-side route checking
   const pathname = window.location.pathname;
@@ -104,6 +111,8 @@ export const App: React.FC = () => {
       {/* Top Header Navigation & Emergency Live Bar */}
       <Header
         isConnected={isConnected}
+        sessionId={sessionId}
+        onOpenSessionModal={() => setIsSessionModalOpen(true)}
         liveState={state.liveState}
         timerState={state.timerState}
         onUpdateLiveState={updateLiveState}
@@ -192,6 +201,19 @@ export const App: React.FC = () => {
         onNextTimerSlot={nextTimerSlot}
         onPrevTimerSlot={prevTimerSlot}
         onSetTimerSlots={setTimerSlots}
+      />
+
+      {/* Session Management & Startup Room Selector Modal */}
+      <SessionModal
+        isOpen={isSessionModalOpen || !hasPromptedSession}
+        onClose={() => {
+          setIsSessionModalOpen(false);
+          setHasPromptedSession(true);
+        }}
+        currentSessionId={sessionId}
+        onSwitchSession={switchSession}
+        onSaveSession={saveCurrentSession}
+        isStartupPrompt={!hasPromptedSession}
       />
     </div>
   );

@@ -17,6 +17,8 @@ import { LiveState, TimerState } from '../types';
 
 interface HeaderProps {
   isConnected: boolean;
+  sessionId?: string;
+  onOpenSessionModal?: () => void;
   liveState: LiveState;
   timerState: TimerState;
   onUpdateLiveState: (update: Partial<LiveState>) => void;
@@ -29,6 +31,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   isConnected,
+  sessionId = 'default',
+  onOpenSessionModal,
   liveState,
   timerState,
   onUpdateLiveState,
@@ -142,6 +146,27 @@ export const Header: React.FC<HeaderProps> = ({
           <Circle size={8} fill={isConnected ? '#10b981' : '#ef4444'} color="transparent" />
           <span>{isConnected ? 'LIVE SYNC ACTIVE' : 'RECONNECTING…'}</span>
         </div>
+
+        {/* Interactive Session Badge */}
+        <button
+          type="button"
+          className="btn"
+          onClick={onOpenSessionModal}
+          style={{
+            fontSize: '11px',
+            padding: '4px 10px',
+            fontWeight: 800,
+            background: 'rgba(56, 189, 248, 0.12)',
+            borderColor: 'rgba(56, 189, 248, 0.35)',
+            color: '#38bdf8',
+            borderRadius: '999px',
+            gap: '6px',
+          }}
+          title={`Active Session: "${sessionId}". Click to switch, create, or save sessions.`}
+        >
+          <Radio size={11} />
+          <span>Session: <strong style={{ color: '#ffffff' }}>{sessionId}</strong></span>
+        </button>
       </div>
 
       {/* Center: EasyWorship Live Panic & Control Buttons */}

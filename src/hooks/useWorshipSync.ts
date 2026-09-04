@@ -28,12 +28,23 @@ const INITIAL_STATE: AppState = {
   library: DEFAULT_LIBRARY_ITEMS,
 };
 
-const CACHE_KEY = 'easystream_worship_state';
+const SESSION_STORAGE_KEY = 'easystream_active_session_id';
+const SAVED_SESSIONS_KEY = 'easystream_saved_sessions_list';
 
-function getInitialCachedState(): AppState {
+export function getActiveSessionId(): string {
+  try {
+    const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (stored && stored.trim()) {
+      return stored.trim().toLowerCase();
+    }
+  } catch {}
+  return 'default';
+}
+
+function getCachedStateForSession(sessionId: string): AppState {
   let baseState: AppState = INITIAL_STATE;
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
+    const cached = localStorage.getItem(`easystream_state_${sessionId}`);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed && typeof parsed === 'object') {
@@ -113,13 +124,24 @@ function getInitialCachedState(): AppState {
 }
 
 export function useWorshipSync() {
-  const [state, setState] = useState<AppState>(getInitialCachedState);
+  const [sessionId, setSessionIdState] = useState<string>(getActiveSessionId);
+  const [hasPromptedSession, setHasPromptedSession] = useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem(SESSION_STORAGE_KEY));
+    } catch {
+      return false;
+    }
+  });
+
+  const [state, setState] = useState<AppState>(() => getCachedStateForSession(getActiveSessionId()));
   const [isConnected, setIsConnected] = useState(false);
   const [isSynced, setIsSynced] = useState(false);
   const [progress, setProgress] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const pendingQueueRef = useRef<WebSocketClientMessage[]>([]);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionIdRef = useRef<string>(sessionId);
+  sessionIdRef.current = sessionId;
 
   // Send message over WebSocket (or queue until open)
   const send = useCallback((msg: WebSocketClientMessage) => {
@@ -135,20 +157,23 @@ export function useWorshipSync() {
     let unmounted = false;
 
     function getWsUrl() {
-      if (import.meta.env.VITE_WS_URL) {
-        return import.meta.env.VITE_WS_URL;
-      }
       const isHttps = window.location.protocol === 'https:';
       const wsProtocol = isHttps ? 'wss:' : 'ws:';
       const hostname = window.location.hostname || 'localhost';
       const port = window.location.port;
+      const currentSid = encodeURIComponent(sessionIdRef.current || 'default');
+
+      if (import.meta.env.VITE_WS_URL) {
+        const base = import.meta.env.VITE_WS_URL;
+        return base.includes('?') ? `${base}&session=${currentSid}` : `${base}?session=${currentSid}`;
+      }
 
       // If running on Vite dev server (e.g. port 5173), connect to backend port (default 3000, or VITE_BACKEND_PORT)
       if (import.meta.env.DEV && port === '5173') {
         const backendPort = import.meta.env.VITE_BACKEND_PORT || '3000';
-        return `${wsProtocol}//${hostname}:${backendPort}/ws`;
+        return `${wsProtocol}//${hostname}:${backendPort}/ws?session=${currentSid}`;
       }
-      return `${wsProtocol}//${window.location.host}/ws`;
+      return `${wsProtocol}//${window.location.host}/ws?session=${currentSid}`;
     }
 
     function connect() {
@@ -181,7 +206,7 @@ export function useWorshipSync() {
               setState(data.state);
               setIsSynced(true);
               try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(data.state));
+                localStorage.setItem(`easystream_state_${sessionIdRef.current}`, JSON.stringify(data.state));
               } catch {
                 // Ignore localStorage errors
               }
@@ -215,7 +240,45 @@ export function useWorshipSync() {
         wsRef.current.close();
       }
     };
-  }, []);
+  }, [sessionId]);
+
+  // Switch session internally
+  const switchSession = useCallback((newSessionId: string) => {
+    const cleanId = (newSessionId || 'default').trim().toLowerCase() || 'default';
+    setSessionIdState(cleanId);
+    setHasPromptedSession(true);
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, cleanId);
+    } catch {}
+
+    const cached = getCachedStateForSession(cleanId);
+    setState(cached);
+
+    send({ type: 'joinSession', sessionId: cleanId });
+  }, [send]);
+
+  // Save active session
+  const saveCurrentSession = useCallback((sessionName?: string) => {
+    send({ type: 'saveSession', sessionId, sessionName });
+    try {
+      localStorage.setItem(`easystream_state_${sessionId}`, JSON.stringify(state));
+      const savedList = JSON.parse(localStorage.getItem(SAVED_SESSIONS_KEY) || '[]');
+      const filtered = savedList.filter((s: any) => s.id !== sessionId);
+      filtered.unshift({ id: sessionId, name: sessionName || sessionId, updatedAt: Date.now() });
+      localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(filtered.slice(0, 20)));
+    } catch {}
+  }, [send, sessionId, state]);
+
+  // Handle auto-save on beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        localStorage.setItem(`easystream_state_${sessionId}`, JSON.stringify(state));
+      } catch {}
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [sessionId, state]);
 
   // Progress animation frame loop for smooth timer bar
   useEffect(() => {
@@ -391,6 +454,11 @@ export function useWorshipSync() {
   }, [send]);
 
   return {
+    sessionId,
+    switchSession,
+    saveCurrentSession,
+    hasPromptedSession,
+    setHasPromptedSession,
     state,
     isConnected,
     isSynced,

@@ -69,23 +69,26 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   onSetTimerSlots,
 }) => {
   const [activeTab, setActiveTab] = useState<'rundown' | 'quick' | 'prompts'>('rundown');
-  const [customMins, setCustomMins] = useState(Math.round(timerState.durationSec / 60));
+  const [customMins, setCustomMins] = useState(Math.floor(timerState.durationSec / 60));
+  const [customSecs, setCustomSecs] = useState(timerState.durationSec % 60);
   const [titleInput, setTitleInput] = useState(timerState.title);
   const [promptInput, setPromptInput] = useState(timerState.promptMessage || '');
   const [targetTimeStr, setTargetTimeStr] = useState('');
   const [now, setNow] = useState(Date.now());
 
-  // New Slot Form State
+  // New Slot Form State (Minutes + Seconds)
   const [newSlotTitle, setNewSlotTitle] = useState('');
   const [newSlotMins, setNewSlotMins] = useState(15);
+  const [newSlotSecs, setNewSlotSecs] = useState(0);
   const [newSlotWarningSec, setNewSlotWarningSec] = useState<number>(300);
   const [newSlotSpeaker, setNewSlotSpeaker] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
 
-  // Editing Slot State
+  // Editing Slot State (Minutes + Seconds)
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
   const [editSlotTitle, setEditSlotTitle] = useState('');
   const [editSlotMins, setEditSlotMins] = useState(15);
+  const [editSlotSecs, setEditSlotSecs] = useState(0);
   const [editSlotWarningSec, setEditSlotWarningSec] = useState<number>(300);
   const [editSlotSpeaker, setEditSlotSpeaker] = useState('');
   const [copiedSlotId, setCopiedSlotId] = useState<string | null>(null);
@@ -106,17 +109,19 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   const startEditingSlot = (slot: TimerSlot) => {
     setEditingSlotId(slot.id);
     setEditSlotTitle(slot.title);
-    setEditSlotMins(Math.max(1, Math.round(slot.durationSec / 60)));
+    setEditSlotMins(Math.floor(slot.durationSec / 60));
+    setEditSlotSecs(slot.durationSec % 60);
     setEditSlotWarningSec(slot.warningThresholdSec ?? 300);
     setEditSlotSpeaker(slot.speaker || '');
   };
 
   const saveEditingSlot = (id: string) => {
     if (!editSlotTitle.trim()) return;
+    const totalSec = Math.max(5, editSlotMins * 60 + editSlotSecs);
     if (onUpdateTimerSlot) {
       onUpdateTimerSlot(id, {
         title: editSlotTitle.trim(),
-        durationSec: Math.max(1, editSlotMins) * 60,
+        durationSec: totalSec,
         speaker: editSlotSpeaker.trim() || undefined,
         warningThresholdSec: editSlotWarningSec,
       });
@@ -177,9 +182,17 @@ export const TimerModal: React.FC<TimerModalProps> = ({
     return str;
   };
 
-  const handleApplyPreset = (minutes: number) => {
+  const formatSlotDuration = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    if (secs === 0) return `${mins} min`;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+  };
+
+  const handleApplyPreset = (minutes: number, seconds: number = 0) => {
     setCustomMins(minutes);
-    const sec = minutes * 60;
+    setCustomSecs(seconds);
+    const sec = minutes * 60 + seconds;
     onSetTimerConfig({ durationSec: sec, remainingSec: sec });
     if (timerState.status === 'idle') {
       onStartTimer(sec, titleInput);
@@ -187,7 +200,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   };
 
   const handleApplyCustomDuration = () => {
-    const sec = Math.max(10, customMins * 60);
+    const sec = Math.max(5, customMins * 60 + customSecs);
     onSetTimerConfig({ durationSec: sec, remainingSec: sec, title: titleInput });
   };
 
@@ -207,7 +220,8 @@ export const TimerModal: React.FC<TimerModalProps> = ({
     }
 
     const durationSec = Math.round(diffMs / 1000);
-    setCustomMins(Math.round(durationSec / 60));
+    setCustomMins(Math.floor(durationSec / 60));
+    setCustomSecs(durationSec % 60);
     onSetTimerConfig({
       durationSec,
       remainingSec: durationSec,
@@ -231,10 +245,11 @@ export const TimerModal: React.FC<TimerModalProps> = ({
   const handleAddNewSlot = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSlotTitle.trim()) return;
+    const totalSec = Math.max(5, newSlotMins * 60 + newSlotSecs);
     const newSlot: TimerSlot = {
       id: `slot-${Date.now()}`,
       title: newSlotTitle.trim(),
-      durationSec: Math.max(10, newSlotMins * 60),
+      durationSec: totalSec,
       speaker: newSlotSpeaker.trim() || undefined,
       warningThresholdSec: newSlotWarningSec,
     };
@@ -243,6 +258,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
     }
     setNewSlotTitle('');
     setNewSlotSpeaker('');
+    setNewSlotSecs(0);
     setNewSlotWarningSec(300);
     setIsAddingSlot(false);
   };
@@ -268,7 +284,18 @@ export const TimerModal: React.FC<TimerModalProps> = ({
     }
   };
 
-  const QUICK_PRESETS = [5, 10, 15, 20, 30, 45, 60, 90];
+  const QUICK_PRESETS = [
+    { label: '30s', mins: 0, secs: 30, secTotal: 30 },
+    { label: '1m', mins: 1, secs: 0, secTotal: 60 },
+    { label: '2m', mins: 2, secs: 0, secTotal: 120 },
+    { label: '5m', mins: 5, secs: 0, secTotal: 300 },
+    { label: '10m', mins: 10, secs: 0, secTotal: 600 },
+    { label: '15m', mins: 15, secs: 0, secTotal: 900 },
+    { label: '20m', mins: 20, secs: 0, secTotal: 1200 },
+    { label: '30m', mins: 30, secs: 0, secTotal: 1800 },
+    { label: '45m', mins: 45, secs: 0, secTotal: 2700 },
+    { label: '60m', mins: 60, secs: 0, secTotal: 3600 },
+  ];
   const QUICK_PROMPTS = [
     '2 Minutes Remaining',
     'Please Wrap Up Sermon',
@@ -714,7 +741,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#38bdf8' }}>
                     New Program Slot Details
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.5fr', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1.1fr 1.4fr', gap: '10px' }}>
                     <div>
                       <label className="form-label">Program Title</label>
                       <input
@@ -728,16 +755,31 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="form-label">Duration (Min)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="240"
-                        className="form-input"
-                        value={newSlotMins}
-                        onChange={e => setNewSlotMins(Number(e.target.value))}
-                        required
-                      />
+                      <label className="form-label">Duration (MM:SS)</label>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="240"
+                          className="form-input"
+                          style={{ padding: '6px 8px', textAlign: 'center' }}
+                          placeholder="Min"
+                          value={newSlotMins}
+                          onChange={e => setNewSlotMins(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                          required
+                        />
+                        <span style={{ fontWeight: 800, color: '#64748b' }}>:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          className="form-input"
+                          style={{ padding: '6px 8px', textAlign: 'center' }}
+                          placeholder="Sec"
+                          value={newSlotSecs}
+                          onChange={e => setNewSlotSecs(Math.min(59, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="form-label">Warning Alert</label>
@@ -797,7 +839,6 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                     const isUpcomingNext = index === activeSlotIndex + 1;
                     const isCompleted = index < activeSlotIndex;
                     const isEditing = editingSlotId === slot.id;
-                    const slotMins = Math.round(slot.durationSec / 60);
 
                     if (isEditing) {
                       return (
@@ -828,7 +869,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                             </button>
                           </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.5fr', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1.1fr 1.4fr', gap: '8px' }}>
                             <div>
                               <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Title</label>
                               <input
@@ -841,16 +882,30 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                               />
                             </div>
                             <div>
-                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Duration (min)</label>
-                              <input
-                                type="number"
-                                min={1}
-                                max={300}
-                                className="form-input"
-                                style={{ fontSize: '13px', padding: '6px 10px' }}
-                                value={editSlotMins}
-                                onChange={(e) => setEditSlotMins(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                              />
+                              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Duration (MM:SS)</label>
+                              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={240}
+                                  className="form-input"
+                                  style={{ fontSize: '13px', padding: '6px 8px', textAlign: 'center' }}
+                                  placeholder="Min"
+                                  value={editSlotMins}
+                                  onChange={(e) => setEditSlotMins(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                />
+                                <span style={{ fontWeight: 800, color: '#64748b' }}>:</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={59}
+                                  className="form-input"
+                                  style={{ fontSize: '13px', padding: '6px 8px', textAlign: 'center' }}
+                                  placeholder="Sec"
+                                  value={editSlotSecs}
+                                  onChange={(e) => setEditSlotSecs(Math.min(59, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+                                />
+                              </div>
                             </div>
                             <div>
                               <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Warning Alert</label>
@@ -1002,7 +1057,7 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                              <span>Duration: <strong style={{ color: '#cbd5e1' }}>{slotMins} min</strong></span>
+                              <span>Duration: <strong style={{ color: '#cbd5e1' }}>{formatSlotDuration(slot.durationSec)}</strong></span>
                               <span>• Warn: <strong style={{ color: '#f59e0b' }}>{slot.warningThresholdSec ? (slot.warningThresholdSec >= 60 ? `${Math.round(slot.warningThresholdSec / 60)}m` : `${slot.warningThresholdSec}s`) : '5m'}</strong></span>
                               {slot.speaker && (
                                 <span>• <User size={11} style={{ display: 'inline' }} /> {slot.speaker}</span>
@@ -1148,12 +1203,12 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                   <Sparkles size={14} color="#f59e0b" />
                   Quick Countdown Presets
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                  {QUICK_PRESETS.map((mins) => {
-                    const isActive = Math.round(timerState.durationSec / 60) === mins;
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                  {QUICK_PRESETS.map((preset) => {
+                    const isActive = timerState.durationSec === preset.secTotal;
                     return (
                       <button
-                        key={mins}
+                        key={preset.label}
                         className={`btn ${isActive ? 'btn-primary' : ''}`}
                         style={{
                           fontSize: '13px',
@@ -1162,9 +1217,9 @@ export const TimerModal: React.FC<TimerModalProps> = ({
                           justifyContent: 'center',
                           background: isActive ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
                         }}
-                        onClick={() => handleApplyPreset(mins)}
+                        onClick={() => handleApplyPreset(preset.mins, preset.secs)}
                       >
-                        {mins} Min
+                        {preset.label}
                       </button>
                     );
                   })}
@@ -1174,25 +1229,41 @@ export const TimerModal: React.FC<TimerModalProps> = ({
               {/* Custom Duration & Schedule Options */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: '1.2fr 1fr',
                 gap: '16px',
                 background: 'rgba(255, 255, 255, 0.02)',
                 border: '1px solid rgba(255, 255, 255, 0.06)',
                 borderRadius: '12px',
                 padding: '14px',
               }}>
-                {/* Custom Minutes Input */}
+                {/* Custom MM:SS Input */}
                 <div>
-                  <label className="form-label">Custom Duration (Minutes)</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="300"
-                      className="form-input"
-                      value={customMins}
-                      onChange={e => setCustomMins(Number(e.target.value))}
-                    />
+                  <label className="form-label">Custom Duration (MM:SS)</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="300"
+                        className="form-input"
+                        placeholder="Min"
+                        value={customMins}
+                        onChange={e => setCustomMins(Math.max(0, Number(e.target.value)))}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>m</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        className="form-input"
+                        placeholder="Sec"
+                        value={customSecs}
+                        onChange={e => setCustomSecs(Math.max(0, Math.min(59, Number(e.target.value))))}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>s</span>
+                    </div>
                     <button
                       type="button"
                       className="btn btn-primary"

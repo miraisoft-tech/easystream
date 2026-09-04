@@ -140,6 +140,13 @@ export interface AppState {
   library: LibraryItem[];
 }
 
+export interface SessionMeta {
+  id: string;
+  name?: string;
+  updatedAt: number;
+  isSaved?: boolean;
+}
+
 export type WebSocketClientMessage =
   | { type: 'setLines'; title: string; subtitle?: string; lines: string[]; category?: 'scripture' | 'song' | 'hymn' | 'announcement' | 'custom' }
   | { type: 'jump'; index: number }
@@ -171,8 +178,13 @@ export type WebSocketClientMessage =
   | { type: 'deleteSchedule'; scheduleId: string }
   | { type: 'saveLibraryItem'; item: LibraryItem }
   | { type: 'deleteLibraryItem'; id: string }
-  | { type: 'resetToDefault' };
+  | { type: 'resetToDefault' }
+  | { type: 'joinSession'; sessionId: string }
+  | { type: 'saveSession'; sessionId: string; sessionName?: string }
+  | { type: 'deleteSession'; sessionId: string }
+  | { type: 'listSessions' };
 
 export type WebSocketServerMessage =
-  | { type: 'state'; state: AppState }
+  | { type: 'state'; state: AppState; sessionId?: string }
+  | { type: 'sessionsList'; sessions: SessionMeta[] }
   | { type: 'notification'; message: string; variant?: 'info' | 'success' | 'warning' | 'error' };

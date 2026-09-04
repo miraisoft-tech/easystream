@@ -247,68 +247,96 @@ function loadSavedStore() {
 
 const saved = loadSavedStore();
 
-// Global synchronized state
-let state = {
-  title: saved?.title || "Psalm 23",
-  subtitle: saved?.subtitle || "Scripture Reading",
-  category: saved?.category || "scripture",
-  lines: saved?.lines || DEFAULT_LIBRARY_ITEMS[0].lines,
-  cur: 0,
-  playing: false,
-  wpm: saved?.wpm || 130,
-  lineStartedAt: null,
-  lineDurationMs: null,
+function createInitialSessionState(savedData) {
+  return {
+    title: savedData?.title || "Psalm 23",
+    subtitle: savedData?.subtitle || "Scripture Reading",
+    category: savedData?.category || "scripture",
+    lines: savedData?.lines || DEFAULT_LIBRARY_ITEMS[0].lines,
+    cur: 0,
+    playing: false,
+    wpm: savedData?.wpm || 130,
+    lineStartedAt: null,
+    lineDurationMs: null,
 
-  liveState: {
-    isBlackout: false,
-    isClearText: false,
-    isLogo: false,
-    isFrozen: false,
-    quickAlert: null,
-  },
+    liveState: {
+      isBlackout: false,
+      isClearText: false,
+      isLogo: false,
+      isFrozen: false,
+      quickAlert: null,
+    },
 
-  timerState: saved?.timerState
-    ? { ...DEFAULT_TIMER_STATE, ...saved.timerState, status: "idle", startedAt: null, targetEndTime: null }
-    : { ...DEFAULT_TIMER_STATE },
+    timerState: savedData?.timerState
+      ? { ...DEFAULT_TIMER_STATE, ...savedData.timerState, status: "idle", startedAt: null, targetEndTime: null }
+      : { ...DEFAULT_TIMER_STATE },
 
-  theme: saved?.theme
-    ? { ...DEFAULT_THEME, ...saved.theme }
-    : { ...DEFAULT_THEME },
+    theme: savedData?.theme
+      ? { ...DEFAULT_THEME, ...savedData.theme }
+      : { ...DEFAULT_THEME },
 
-  currentScheduleId: saved?.currentScheduleId || "sunday-morning-worship",
-  activeScheduleIndex: 0,
-  schedule: saved?.schedule || DEFAULT_SCHEDULES[0].items,
+    currentScheduleId: savedData?.currentScheduleId || "sunday-morning-worship",
+    activeScheduleIndex: 0,
+    schedule: savedData?.schedule || DEFAULT_SCHEDULES[0].items,
 
-  savedSchedules: saved?.savedSchedules || DEFAULT_SCHEDULES,
-  library: saved?.library || DEFAULT_LIBRARY_ITEMS,
-};
+    savedSchedules: savedData?.savedSchedules || DEFAULT_SCHEDULES,
+    library: savedData?.library || DEFAULT_LIBRARY_ITEMS,
+    updatedAt: savedData?.updatedAt || Date.now(),
+    advanceTimer: null,
+  };
+}
 
-let advanceTimer = null;
+const sessions = new Map();
+
+// Initialize sessions from store.json
+if (saved && saved.sessions && typeof saved.sessions === "object") {
+  for (const [id, sData] of Object.entries(saved.sessions)) {
+    sessions.set(id.toLowerCase(), createInitialSessionState(sData));
+  }
+} else if (saved && typeof saved === "object") {
+  sessions.set("default", createInitialSessionState(saved));
+}
+if (!sessions.has("default")) {
+  sessions.set("default", createInitialSessionState(null));
+}
+
+function getSession(sessionId = "default") {
+  const id = (sessionId || "default").trim().toLowerCase() || "default";
+  if (!sessions.has(id)) {
+    sessions.set(id, createInitialSessionState(null));
+  }
+  return sessions.get(id);
+}
+
 let saveDebounceTimer = null;
 
 function saveStoreToDisk() {
   clearTimeout(saveDebounceTimer);
   saveDebounceTimer = setTimeout(() => {
     try {
-      const toSave = {
-        title: state.title,
-        subtitle: state.subtitle,
-        category: state.category,
-        lines: state.lines,
-        wpm: state.wpm,
-        theme: state.theme,
-        timerState: {
-          ...state.timerState,
-          status: "idle",
-          startedAt: null,
-          targetEndTime: null,
-        },
-        currentScheduleId: state.currentScheduleId,
-        schedule: state.schedule,
-        savedSchedules: state.savedSchedules,
-        library: state.library,
-      };
-      fs.writeFileSync(STORE_PATH, JSON.stringify(toSave, null, 2), "utf-8");
+      const sessionsObj = {};
+      for (const [id, s] of sessions.entries()) {
+        sessionsObj[id] = {
+          title: s.title,
+          subtitle: s.subtitle,
+          category: s.category,
+          lines: s.lines,
+          wpm: s.wpm,
+          theme: s.theme,
+          timerState: {
+            ...s.timerState,
+            status: "idle",
+            startedAt: null,
+            targetEndTime: null,
+          },
+          currentScheduleId: s.currentScheduleId,
+          schedule: s.schedule,
+          savedSchedules: s.savedSchedules,
+          library: s.library,
+          updatedAt: Date.now(),
+        };
+      }
+      fs.writeFileSync(STORE_PATH, JSON.stringify({ sessions: sessionsObj }, null, 2), "utf-8");
     } catch (err) {
       console.error("Failed to save store to disk:", err);
     }
@@ -320,65 +348,70 @@ function lineDurationMs(text, wpm) {
   return Math.max(2500, Math.round((words / wpm) * 60000) + 700);
 }
 
-function clearAdvanceTimer() {
-  if (advanceTimer) {
-    clearTimeout(advanceTimer);
-    advanceTimer = null;
+function clearAdvanceTimer(state) {
+  if (state.advanceTimer) {
+    clearTimeout(state.advanceTimer);
+    state.advanceTimer = null;
   }
 }
 
-function scheduleAdvance() {
-  clearAdvanceTimer();
+function scheduleAdvance(sessionId) {
+  const state = getSession(sessionId);
+  clearAdvanceTimer(state);
   if (!state.playing) return;
   const text = state.lines[state.cur] || "";
   state.lineDurationMs = lineDurationMs(text, state.wpm);
   state.lineStartedAt = Date.now();
 
-  advanceTimer = setTimeout(() => {
+  state.advanceTimer = setTimeout(() => {
     if (state.cur + 1 < state.lines.length) {
       state.cur += 1;
-      scheduleAdvance();
+      scheduleAdvance(sessionId);
     } else {
       state.playing = false;
       state.lineStartedAt = null;
       state.lineDurationMs = null;
     }
-    broadcast();
+    broadcast(sessionId);
   }, state.lineDurationMs);
 }
 
-function setPlaying(p) {
+function setPlaying(sessionId, p) {
+  const state = getSession(sessionId);
   state.playing = p;
   if (p) {
-    scheduleAdvance();
+    scheduleAdvance(sessionId);
   } else {
-    clearAdvanceTimer();
+    clearAdvanceTimer(state);
     state.lineStartedAt = null;
     state.lineDurationMs = null;
   }
 }
 
-function jumpTo(idx) {
+function jumpTo(sessionId, idx) {
+  const state = getSession(sessionId);
   if (idx < 0 || idx >= state.lines.length) return;
   state.cur = idx;
   if (state.playing) {
-    scheduleAdvance();
+    scheduleAdvance(sessionId);
   } else {
     state.lineStartedAt = null;
     state.lineDurationMs = null;
   }
 }
 
-function restart() {
-  clearAdvanceTimer();
+function restart(sessionId) {
+  const state = getSession(sessionId);
+  clearAdvanceTimer(state);
   state.cur = 0;
   state.playing = false;
   state.lineStartedAt = null;
   state.lineDurationMs = null;
 }
 
-function setLines(title, subtitle, lines, category = "custom") {
-  clearAdvanceTimer();
+function setLines(sessionId, title, subtitle, lines, category = "custom") {
+  const state = getSession(sessionId);
+  clearAdvanceTimer(state);
   state.title = title && title.trim() ? title.trim() : "Presentation";
   state.subtitle = subtitle || "";
   state.category = category;
@@ -391,28 +424,33 @@ function setLines(title, subtitle, lines, category = "custom") {
   saveStoreToDisk();
 }
 
-function setWpm(wpm) {
+function setWpm(sessionId, wpm) {
+  const state = getSession(sessionId);
   const n = Number(wpm);
   if (!Number.isFinite(n)) return;
   state.wpm = Math.max(40, Math.min(400, Math.round(n)));
-  if (state.playing) scheduleAdvance();
+  if (state.playing) scheduleAdvance(sessionId);
   saveStoreToDisk();
 }
 
-function setTheme(newTheme) {
+function setTheme(sessionId, newTheme) {
+  const state = getSession(sessionId);
   state.theme = { ...state.theme, ...newTheme };
   saveStoreToDisk();
 }
 
-function setLiveState(newLiveState) {
+function setLiveState(sessionId, newLiveState) {
+  const state = getSession(sessionId);
   state.liveState = { ...state.liveState, ...newLiveState };
 }
 
-function setQuickAlert(text) {
+function setQuickAlert(sessionId, text) {
+  const state = getSession(sessionId);
   state.liveState.quickAlert = text && text.trim() ? text.trim() : null;
 }
 
-function loadScheduleItem(index) {
+function loadScheduleItem(sessionId, index) {
+  const state = getSession(sessionId);
   if (index >= 0 && index < state.schedule.length) {
     const item = state.schedule[index];
     state.activeScheduleIndex = index;
@@ -431,7 +469,8 @@ function loadScheduleItem(index) {
   }
 }
 
-function saveSchedule(schedule) {
+function saveSchedule(sessionId, schedule) {
+  const state = getSession(sessionId);
   const existingIdx = state.savedSchedules.findIndex(
     (s) => s.id === schedule.id,
   );
@@ -446,27 +485,30 @@ function saveSchedule(schedule) {
   saveStoreToDisk();
 }
 
-function loadSchedule(scheduleId) {
+function loadSchedule(sessionId, scheduleId) {
+  const state = getSession(sessionId);
   const found = state.savedSchedules.find((s) => s.id === scheduleId);
   if (found) {
     state.currentScheduleId = found.id;
     state.schedule = found.items;
     state.activeScheduleIndex = 0;
     if (found.items.length > 0) {
-      loadScheduleItem(0);
+      loadScheduleItem(sessionId, 0);
     }
     saveStoreToDisk();
   }
 }
 
-function deleteSchedule(scheduleId) {
+function deleteSchedule(sessionId, scheduleId) {
+  const state = getSession(sessionId);
   state.savedSchedules = state.savedSchedules.filter(
     (s) => s.id !== scheduleId,
   );
   saveStoreToDisk();
 }
 
-function saveLibraryItem(item) {
+function saveLibraryItem(sessionId, item) {
+  const state = getSession(sessionId);
   const idx = state.library.findIndex((i) => i.id === item.id);
   if (idx >= 0) {
     state.library[idx] = item;
@@ -476,12 +518,14 @@ function saveLibraryItem(item) {
   saveStoreToDisk();
 }
 
-function deleteLibraryItem(id) {
+function deleteLibraryItem(sessionId, id) {
+  const state = getSession(sessionId);
   state.library = state.library.filter((i) => i.id !== id);
   saveStoreToDisk();
 }
 
-function startTimer(durationSec, title) {
+function startTimer(sessionId, durationSec, title) {
+  const state = getSession(sessionId);
   if (title && typeof title === "string") {
     state.timerState.title = title.trim();
   }
@@ -498,7 +542,8 @@ function startTimer(durationSec, title) {
   saveStoreToDisk();
 }
 
-function pauseTimer() {
+function pauseTimer(sessionId) {
+  const state = getSession(sessionId);
   if (state.timerState.status === "running" && state.timerState.targetEndTime) {
     const diffSec = Math.round((state.timerState.targetEndTime - Date.now()) / 1000);
     state.timerState.remainingSec = diffSec;
@@ -509,7 +554,8 @@ function pauseTimer() {
   }
 }
 
-function resetTimer() {
+function resetTimer(sessionId) {
+  const state = getSession(sessionId);
   state.timerState.remainingSec = state.timerState.durationSec;
   state.timerState.status = "idle";
   state.timerState.startedAt = null;
@@ -517,7 +563,8 @@ function resetTimer() {
   saveStoreToDisk();
 }
 
-function adjustTimer(deltaSec) {
+function adjustTimer(sessionId, deltaSec) {
+  const state = getSession(sessionId);
   const delta = Number(deltaSec);
   if (!Number.isFinite(delta)) return;
   if (state.timerState.status === "running" && state.timerState.targetEndTime) {
@@ -530,7 +577,8 @@ function adjustTimer(deltaSec) {
   saveStoreToDisk();
 }
 
-function setTimerConfig(config) {
+function setTimerConfig(sessionId, config) {
+  const state = getSession(sessionId);
   if (!config || typeof config !== "object") return;
   state.timerState = { ...state.timerState, ...config };
   if (config.durationSec && state.timerState.status === "idle") {
@@ -539,18 +587,20 @@ function setTimerConfig(config) {
   saveStoreToDisk();
 }
 
-function setTimerPrompt(message, visible) {
+function setTimerPrompt(sessionId, message, visible) {
+  const state = getSession(sessionId);
   state.timerState.promptMessage = message && message.trim() ? message.trim() : null;
   state.timerState.promptVisible = Boolean(visible && state.timerState.promptMessage);
   saveStoreToDisk();
 }
 
-function addTimerSlot(slot) {
+function addTimerSlot(sessionId, slot) {
+  const state = getSession(sessionId);
   if (!slot || !slot.title) return;
   const newSlot = {
     id: slot.id || `slot-${Date.now()}`,
     title: slot.title.trim(),
-    durationSec: Math.max(10, Number(slot.durationSec) || 300),
+    durationSec: Math.max(5, Number(slot.durationSec) || 300),
     speaker: slot.speaker ? slot.speaker.trim() : undefined,
     notes: slot.notes ? slot.notes.trim() : undefined,
     warningThresholdSec: slot.warningThresholdSec,
@@ -562,7 +612,8 @@ function addTimerSlot(slot) {
   saveStoreToDisk();
 }
 
-function updateTimerSlot(id, updates) {
+function updateTimerSlot(sessionId, id, updates) {
+  const state = getSession(sessionId);
   if (!Array.isArray(state.timerState.slots)) return;
   const index = state.timerState.slots.findIndex((s) => s.id === id);
   if (index === -1) return;
@@ -586,7 +637,8 @@ function updateTimerSlot(id, updates) {
   saveStoreToDisk();
 }
 
-function deleteTimerSlot(id) {
+function deleteTimerSlot(sessionId, id) {
+  const state = getSession(sessionId);
   if (!Array.isArray(state.timerState.slots)) return;
   state.timerState.slots = state.timerState.slots.filter((s) => s.id !== id);
   if (state.timerState.activeSlotIndex >= state.timerState.slots.length) {
@@ -595,13 +647,15 @@ function deleteTimerSlot(id) {
   saveStoreToDisk();
 }
 
-function reorderTimerSlots(slots) {
+function reorderTimerSlots(sessionId, slots) {
+  const state = getSession(sessionId);
   if (!Array.isArray(slots)) return;
   state.timerState.slots = slots;
   saveStoreToDisk();
 }
 
-function jumpToTimerSlot(index, autoStart = false) {
+function jumpToTimerSlot(sessionId, index, autoStart = false) {
+  const state = getSession(sessionId);
   if (!Array.isArray(state.timerState.slots) || state.timerState.slots.length === 0) return;
   const targetIndex = Math.max(0, Math.min(index, state.timerState.slots.length - 1));
   const slot = state.timerState.slots[targetIndex];
@@ -625,23 +679,26 @@ function jumpToTimerSlot(index, autoStart = false) {
   saveStoreToDisk();
 }
 
-function nextTimerSlot(autoStart = false) {
+function nextTimerSlot(sessionId, autoStart = false) {
+  const state = getSession(sessionId);
   if (!Array.isArray(state.timerState.slots)) return;
   const nextIdx = state.timerState.activeSlotIndex + 1;
   if (nextIdx < state.timerState.slots.length) {
-    jumpToTimerSlot(nextIdx, autoStart);
+    jumpToTimerSlot(sessionId, nextIdx, autoStart);
   }
 }
 
-function prevTimerSlot(autoStart = false) {
+function prevTimerSlot(sessionId, autoStart = false) {
+  const state = getSession(sessionId);
   if (!Array.isArray(state.timerState.slots)) return;
   const prevIdx = state.timerState.activeSlotIndex - 1;
   if (prevIdx >= 0) {
-    jumpToTimerSlot(prevIdx, autoStart);
+    jumpToTimerSlot(sessionId, prevIdx, autoStart);
   }
 }
 
-function setTimerSlots(slots, activeIndex = 0) {
+function setTimerSlots(sessionId, slots, activeIndex = 0) {
+  const state = getSession(sessionId);
   if (!Array.isArray(slots)) return;
   state.timerState.slots = slots;
   state.timerState.activeSlotIndex = Math.max(0, Math.min(activeIndex, slots.length - 1));
@@ -1137,17 +1194,30 @@ const server = http.createServer((req, res) => {
 // WebSocket Server
 const wss = new WebSocketServer({ server, path: "/ws" });
 
-function broadcast() {
-  const payload = JSON.stringify({ type: "state", state });
+function broadcast(sessionId = "default") {
+  const targetSessionId = (sessionId || "default").trim().toLowerCase();
+  const sessionState = getSession(targetSessionId);
+  const payload = JSON.stringify({ type: "state", state: sessionState, sessionId: targetSessionId });
   wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
+    if (client.readyState === WebSocket.OPEN && (client.sessionId || "default") === targetSessionId) {
       client.send(payload);
     }
   });
 }
 
-wss.on("connection", (ws) => {
-  ws.send(JSON.stringify({ type: "state", state }));
+wss.on("connection", (ws, req) => {
+  let initialSessionId = "default";
+  try {
+    const urlObj = new URL(req.url, "http://localhost");
+    const querySession = urlObj.searchParams.get("session") || urlObj.searchParams.get("sessionId");
+    if (querySession) {
+      initialSessionId = querySession.trim().toLowerCase();
+    }
+  } catch {}
+
+  ws.sessionId = initialSessionId;
+  const sessionState = getSession(ws.sessionId);
+  ws.send(JSON.stringify({ type: "state", state: sessionState, sessionId: ws.sessionId }));
 
   ws.on("message", (raw) => {
     let msg;
@@ -1157,113 +1227,147 @@ wss.on("connection", (ws) => {
       return;
     }
 
+    const currentSessionId = (ws.sessionId || "default").trim().toLowerCase();
+
     switch (msg.type) {
+      case "joinSession":
+        if (msg.sessionId) {
+          ws.sessionId = msg.sessionId.trim().toLowerCase();
+          const s = getSession(ws.sessionId);
+          ws.send(JSON.stringify({ type: "state", state: s, sessionId: ws.sessionId }));
+        }
+        return;
+      case "listSessions":
+        const list = Array.from(sessions.keys()).map((id) => ({
+          id,
+          name: id,
+          updatedAt: getSession(id).updatedAt || Date.now(),
+        }));
+        ws.send(JSON.stringify({ type: "sessionsList", sessions: list }));
+        return;
+      case "saveSession":
+        saveStoreToDisk();
+        ws.send(JSON.stringify({ type: "notification", message: `Session ${currentSessionId} saved successfully`, variant: "success" }));
+        return;
+      case "deleteSession":
+        if (msg.sessionId && msg.sessionId !== "default") {
+          sessions.delete(msg.sessionId.trim().toLowerCase());
+          saveStoreToDisk();
+          ws.send(JSON.stringify({ type: "notification", message: `Session ${msg.sessionId} deleted`, variant: "info" }));
+        }
+        return;
       case "setLines":
-        setLines(msg.title, msg.subtitle, msg.lines, msg.category);
+        setLines(currentSessionId, msg.title, msg.subtitle, msg.lines, msg.category);
         break;
       case "jump":
-        jumpTo(msg.index);
+        jumpTo(currentSessionId, msg.index);
         break;
       case "play":
-        setPlaying(true);
+        setPlaying(currentSessionId, true);
         break;
       case "pause":
-        setPlaying(false);
+        setPlaying(currentSessionId, false);
         break;
       case "restart":
-        restart();
+        restart(currentSessionId);
         break;
       case "setWpm":
-        setWpm(msg.wpm);
+        setWpm(currentSessionId, msg.wpm);
         break;
       case "setTheme":
-        setTheme(msg.theme);
+        setTheme(currentSessionId, msg.theme);
         break;
       case "setLiveState":
-        setLiveState(msg.liveState);
+        setLiveState(currentSessionId, msg.liveState);
         break;
       case "setQuickAlert":
-        setQuickAlert(msg.text);
+        setQuickAlert(currentSessionId, msg.text);
         break;
       case "startTimer":
-        startTimer(msg.durationSec, msg.title);
+        startTimer(currentSessionId, msg.durationSec, msg.title);
         break;
       case "pauseTimer":
-        pauseTimer();
+        pauseTimer(currentSessionId);
         break;
       case "resetTimer":
-        resetTimer();
+        resetTimer(currentSessionId);
         break;
       case "adjustTimer":
-        adjustTimer(msg.deltaSec);
+        adjustTimer(currentSessionId, msg.deltaSec);
         break;
       case "setTimerConfig":
-        setTimerConfig(msg.config);
+        setTimerConfig(currentSessionId, msg.config);
         break;
       case "setTimerPrompt":
-        setTimerPrompt(msg.message, msg.visible);
+        setTimerPrompt(currentSessionId, msg.message, msg.visible);
         break;
       case "addTimerSlot":
-        addTimerSlot(msg.slot);
+        addTimerSlot(currentSessionId, msg.slot);
         break;
       case "updateTimerSlot":
-        updateTimerSlot(msg.id, msg.slot);
+        updateTimerSlot(currentSessionId, msg.id, msg.slot);
         break;
       case "deleteTimerSlot":
-        deleteTimerSlot(msg.id);
+        deleteTimerSlot(currentSessionId, msg.id);
         break;
       case "reorderTimerSlots":
-        reorderTimerSlots(msg.slots);
+        reorderTimerSlots(currentSessionId, msg.slots);
         break;
       case "jumpToTimerSlot":
-        jumpToTimerSlot(msg.index, msg.autoStart);
+        jumpToTimerSlot(currentSessionId, msg.index, msg.autoStart);
         break;
       case "nextTimerSlot":
-        nextTimerSlot(msg.autoStart);
+        nextTimerSlot(currentSessionId, msg.autoStart);
         break;
       case "prevTimerSlot":
-        prevTimerSlot(msg.autoStart);
+        prevTimerSlot(currentSessionId, msg.autoStart);
         break;
       case "setTimerSlots":
-        setTimerSlots(msg.slots, msg.activeIndex);
+        setTimerSlots(currentSessionId, msg.slots, msg.activeIndex);
         break;
       case "loadScheduleItem":
-        loadScheduleItem(msg.index);
+        loadScheduleItem(currentSessionId, msg.index);
         break;
       case "updateSchedule":
-        state.schedule = msg.items;
-        saveStoreToDisk();
+        {
+          const s = getSession(currentSessionId);
+          s.schedule = msg.items;
+          saveStoreToDisk();
+        }
         break;
       case "saveSchedule":
-        saveSchedule(msg.schedule);
+        saveSchedule(currentSessionId, msg.schedule);
         break;
       case "loadSchedule":
-        loadSchedule(msg.scheduleId);
+        loadSchedule(currentSessionId, msg.scheduleId);
         break;
       case "deleteSchedule":
-        deleteSchedule(msg.scheduleId);
+        deleteSchedule(currentSessionId, msg.scheduleId);
         break;
       case "saveLibraryItem":
-        saveLibraryItem(msg.item);
+        saveLibraryItem(currentSessionId, msg.item);
         break;
       case "deleteLibraryItem":
-        deleteLibraryItem(msg.id);
+        deleteLibraryItem(currentSessionId, msg.id);
         break;
       case "resetToDefault":
-        state.theme = { ...DEFAULT_THEME };
-        state.library = DEFAULT_LIBRARY_ITEMS;
-        state.savedSchedules = DEFAULT_SCHEDULES;
-        state.schedule = DEFAULT_SCHEDULES[0].items;
-        state.currentScheduleId = DEFAULT_SCHEDULES[0].id;
-        state.activeScheduleIndex = 0;
-        state.timerState = { ...DEFAULT_TIMER_STATE };
-        loadScheduleItem(0);
-        saveStoreToDisk();
+        {
+          const s = getSession(currentSessionId);
+          s.theme = { ...DEFAULT_THEME };
+          s.library = DEFAULT_LIBRARY_ITEMS;
+          s.savedSchedules = DEFAULT_SCHEDULES;
+          s.schedule = DEFAULT_SCHEDULES[0].items;
+          s.currentScheduleId = DEFAULT_SCHEDULES[0].id;
+          s.activeScheduleIndex = 0;
+          s.timerState = { ...DEFAULT_TIMER_STATE };
+          loadScheduleItem(currentSessionId, 0);
+          saveStoreToDisk();
+        }
         break;
       default:
         return;
     }
-    broadcast();
+    broadcast(currentSessionId);
   });
 });
 
