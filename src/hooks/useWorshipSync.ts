@@ -64,6 +64,12 @@ function getCachedStateForSession(sessionId: string): AppState {
             ...(parsed.theme || {}),
           },
         };
+
+        // Recalculate live remaining seconds if timer was running
+        if (baseState.timerState.status === 'running' && baseState.timerState.targetEndTime) {
+          const now = Date.now();
+          baseState.timerState.remainingSec = Math.floor((baseState.timerState.targetEndTime - now) / 1000);
+        }
       }
     }
   } catch (err) {
@@ -98,21 +104,28 @@ function getCachedStateForSession(sessionId: string): AppState {
 
         if (targetIndex !== -1 && slots[targetIndex]) {
           const slot = slots[targetIndex];
-          const now = Date.now();
-          baseState = {
-            ...baseState,
-            timerState: {
-              ...baseState.timerState,
-              activeSlotIndex: targetIndex,
-              title: slot.title,
-              durationSec: slot.durationSec,
-              remainingSec: slot.durationSec,
-              warningThresholdSec: slot.warningThresholdSec || baseState.timerState.warningThresholdSec || 300,
-              status: 'running',
-              startedAt: now,
-              targetEndTime: now + slot.durationSec * 1000,
-            }
-          };
+          const isAlreadyRunningThisSlot =
+            baseState.timerState.activeSlotIndex === targetIndex &&
+            baseState.timerState.status === 'running' &&
+            Boolean(baseState.timerState.targetEndTime);
+
+          if (!isAlreadyRunningThisSlot) {
+            const now = Date.now();
+            baseState = {
+              ...baseState,
+              timerState: {
+                ...baseState.timerState,
+                activeSlotIndex: targetIndex,
+                title: slot.title,
+                durationSec: slot.durationSec,
+                remainingSec: slot.durationSec,
+                warningThresholdSec: slot.warningThresholdSec || baseState.timerState.warningThresholdSec || 300,
+                status: 'running',
+                startedAt: now,
+                targetEndTime: now + slot.durationSec * 1000,
+              }
+            };
+          }
         }
       }
     }
@@ -203,10 +216,14 @@ export function useWorshipSync() {
           try {
             const data: WebSocketServerMessage = JSON.parse(event.data);
             if (data.type === 'state') {
-              setState(data.state);
+              const serverState = data.state;
+              if (serverState?.timerState?.status === 'running' && serverState.timerState.targetEndTime) {
+                serverState.timerState.remainingSec = Math.floor((serverState.timerState.targetEndTime - Date.now()) / 1000);
+              }
+              setState(serverState);
               setIsSynced(true);
               try {
-                localStorage.setItem(`easystream_state_${sessionIdRef.current}`, JSON.stringify(data.state));
+                localStorage.setItem(`easystream_state_${sessionIdRef.current}`, JSON.stringify(serverState));
               } catch {
                 // Ignore localStorage errors
               }
@@ -458,6 +475,16 @@ export function useWorshipSync() {
       const targetIndex = Math.max(0, Math.min(index, slots.length - 1));
       const slot = slots[targetIndex];
       if (!slot) return prev;
+
+      const isAlreadyRunningThisSlot =
+        prev.timerState.activeSlotIndex === targetIndex &&
+        prev.timerState.status === 'running' &&
+        Boolean(prev.timerState.targetEndTime);
+
+      if (isAlreadyRunningThisSlot && autoStart) {
+        return prev;
+      }
+
       const now = Date.now();
       return {
         ...prev,

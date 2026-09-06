@@ -248,6 +248,15 @@ function loadSavedStore() {
 const saved = loadSavedStore();
 
 function createInitialSessionState(savedData) {
+  let initialTimerState = { ...DEFAULT_TIMER_STATE };
+  if (savedData?.timerState) {
+    initialTimerState = { ...DEFAULT_TIMER_STATE, ...savedData.timerState };
+    if (initialTimerState.status === "running" && initialTimerState.targetEndTime) {
+      const now = Date.now();
+      initialTimerState.remainingSec = Math.floor((initialTimerState.targetEndTime - now) / 1000);
+    }
+  }
+
   return {
     title: savedData?.title || "Psalm 23",
     subtitle: savedData?.subtitle || "Scripture Reading",
@@ -267,9 +276,7 @@ function createInitialSessionState(savedData) {
       quickAlert: null,
     },
 
-    timerState: savedData?.timerState
-      ? { ...DEFAULT_TIMER_STATE, ...savedData.timerState, status: "idle", startedAt: null, targetEndTime: null }
-      : { ...DEFAULT_TIMER_STATE },
+    timerState: initialTimerState,
 
     theme: savedData?.theme
       ? { ...DEFAULT_THEME, ...savedData.theme }
@@ -325,9 +332,10 @@ function saveStoreToDisk() {
           theme: s.theme,
           timerState: {
             ...s.timerState,
-            status: "idle",
-            startedAt: null,
-            targetEndTime: null,
+            remainingSec:
+              s.timerState.status === "running" && s.timerState.targetEndTime
+                ? Math.floor((s.timerState.targetEndTime - Date.now()) / 1000)
+                : s.timerState.remainingSec,
           },
           currentScheduleId: s.currentScheduleId,
           schedule: s.schedule,
@@ -661,17 +669,25 @@ function jumpToTimerSlot(sessionId, index, autoStart = false) {
   const slot = state.timerState.slots[targetIndex];
   if (!slot) return;
 
+  const isAlreadyRunningThisSlot =
+    state.timerState.activeSlotIndex === targetIndex &&
+    state.timerState.status === "running" &&
+    Boolean(state.timerState.targetEndTime);
+
   state.timerState.activeSlotIndex = targetIndex;
   state.timerState.title = slot.title;
   state.timerState.durationSec = slot.durationSec;
-  state.timerState.remainingSec = slot.durationSec;
   state.timerState.warningThresholdSec = slot.warningThresholdSec || state.timerState.warningThresholdSec || 300;
 
   if (autoStart) {
-    state.timerState.startedAt = Date.now();
-    state.timerState.targetEndTime = Date.now() + slot.durationSec * 1000;
-    state.timerState.status = "running";
+    if (!isAlreadyRunningThisSlot) {
+      state.timerState.remainingSec = slot.durationSec;
+      state.timerState.startedAt = Date.now();
+      state.timerState.targetEndTime = Date.now() + slot.durationSec * 1000;
+      state.timerState.status = "running";
+    }
   } else {
+    state.timerState.remainingSec = slot.durationSec;
     state.timerState.status = "idle";
     state.timerState.startedAt = null;
     state.timerState.targetEndTime = null;
@@ -1204,9 +1220,17 @@ const server = http.createServer((req, res) => {
 // WebSocket Server
 const wss = new WebSocketServer({ server, path: "/ws" });
 
+function prepareSessionStateForBroadcast(sessionState) {
+  if (sessionState.timerState && sessionState.timerState.status === "running" && sessionState.timerState.targetEndTime) {
+    const now = Date.now();
+    sessionState.timerState.remainingSec = Math.floor((sessionState.timerState.targetEndTime - now) / 1000);
+  }
+  return sessionState;
+}
+
 function broadcast(sessionId = "default") {
   const targetSessionId = (sessionId || "default").trim().toLowerCase();
-  const sessionState = getSession(targetSessionId);
+  const sessionState = prepareSessionStateForBroadcast(getSession(targetSessionId));
   const payload = JSON.stringify({ type: "state", state: sessionState, sessionId: targetSessionId });
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN && (client.sessionId || "default") === targetSessionId) {
@@ -1226,7 +1250,7 @@ wss.on("connection", (ws, req) => {
   } catch {}
 
   ws.sessionId = initialSessionId;
-  const sessionState = getSession(ws.sessionId);
+  const sessionState = prepareSessionStateForBroadcast(getSession(ws.sessionId));
   ws.send(JSON.stringify({ type: "state", state: sessionState, sessionId: ws.sessionId }));
 
   ws.on("message", (raw) => {
@@ -1463,9 +1487,10 @@ function flushStoreSync() {
         theme: s.theme,
         timerState: {
           ...s.timerState,
-          status: "idle",
-          startedAt: null,
-          targetEndTime: null,
+          remainingSec:
+            s.timerState.status === "running" && s.timerState.targetEndTime
+              ? Math.floor((s.timerState.targetEndTime - Date.now()) / 1000)
+              : s.timerState.remainingSec,
         },
         currentScheduleId: s.currentScheduleId,
         schedule: s.schedule,

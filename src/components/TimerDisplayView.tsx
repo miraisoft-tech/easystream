@@ -65,10 +65,13 @@ export const TimerDisplayView: React.FC<TimerDisplayViewProps> = ({
 
     if (targetIndex !== -1) {
       appliedScheduleParamRef.current = scheduleParam;
-      // Autostart immediately once page is loaded
+      // Autostart immediately once page is loaded if not already running on this slot
+      if (timerState.activeSlotIndex === targetIndex && timerState.status === 'running' && timerState.targetEndTime) {
+        return;
+      }
       onJumpToTimerSlot(targetIndex, true);
     }
-  }, [timerState.slots, onJumpToTimerSlot]);
+  }, [timerState.slots, timerState.activeSlotIndex, timerState.status, timerState.targetEndTime, onJumpToTimerSlot]);
 
   const currentScale = timerState.fontSizeScale || 100;
 
