@@ -53,6 +53,7 @@ export const App: React.FC = () => {
     saveLibraryItem,
     deleteLibraryItem,
     resetToDefault,
+    resetAllToDefault,
   } = useWorshipSync();
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -121,6 +122,7 @@ export const App: React.FC = () => {
         onOpenOnlineSearch={() => setIsOnlineSearchOpen(true)}
         onOpenTimer={() => setIsTimerOpen(true)}
         onResetToDefault={resetToDefault}
+        onResetAllToDefault={resetAllToDefault}
       />
 
       {/* Main Studio 3-Column Work Area */}
@@ -213,6 +215,7 @@ export const App: React.FC = () => {
         currentSessionId={sessionId}
         onSwitchSession={switchSession}
         onSaveSession={saveCurrentSession}
+        onResetAllSessions={resetAllToDefault}
         isStartupPrompt={!hasPromptedSession}
       />
     </div>

@@ -179,6 +179,7 @@ export type WebSocketClientMessage =
   | { type: 'saveLibraryItem'; item: LibraryItem }
   | { type: 'deleteLibraryItem'; id: string }
   | { type: 'resetToDefault' }
+  | { type: 'resetAllToDefault' }
   | { type: 'joinSession'; sessionId: string }
   | { type: 'saveSession'; sessionId: string; sessionName?: string }
   | { type: 'deleteSession'; sessionId: string }

@@ -11,9 +11,13 @@ import {
   Radio,
   Image as ImageIcon,
   Search,
-  Clock
+  Clock,
+  Download,
+  Check
 } from 'lucide-react';
 import { LiveState, TimerState } from '../types';
+import { usePWAInstall } from '../hooks/usePWAInstall';
+import { ResetConfirmModal } from './ResetConfirmModal';
 
 interface HeaderProps {
   isConnected: boolean;
@@ -27,6 +31,7 @@ interface HeaderProps {
   onOpenOnlineSearch: () => void;
   onOpenTimer: () => void;
   onResetToDefault: () => void;
+  onResetAllToDefault?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,10 +46,15 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenOnlineSearch,
   onOpenTimer,
   onResetToDefault,
+  onResetAllToDefault,
 }) => {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [installSuccessToast, setInstallSuccessToast] = useState(false);
   const [alertText, setAlertText] = useState(liveState.quickAlert || '');
   const [now, setNow] = useState(Date.now());
+
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   useEffect(() => {
     if (timerState.status === 'running') {
@@ -251,8 +261,58 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      {/* Right: Output Windows & Library Drawer */}
+      {/* Right: Output Windows, Install App & Library Drawer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* PWA Install App Button */}
+        {isInstallable && (
+          <button
+            type="button"
+            className="btn"
+            style={{
+              fontSize: '12px',
+              padding: '6px 12px',
+              background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+              color: '#ffffff',
+              fontWeight: 800,
+              border: 'none',
+              boxShadow: '0 0 16px rgba(37, 99, 235, 0.45)',
+              gap: '6px',
+            }}
+            onClick={async () => {
+              const installed = await promptInstall();
+              if (installed) {
+                setInstallSuccessToast(true);
+                setTimeout(() => setInstallSuccessToast(false), 3000);
+              }
+            }}
+            title="Install EasyPresenter Studio on your Desktop for native standalone performance"
+          >
+            <Download size={13} />
+            Install App
+          </button>
+        )}
+
+        {isInstalled && (
+          <div
+            style={{
+              fontSize: '11px',
+              padding: '4px 8px',
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: '6px',
+              color: '#38bdf8',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Running in Desktop Standalone Application mode"
+          >
+            <Check size={11} />
+            Desktop App
+          </div>
+        )}
+
         <button 
           className="btn"
           style={{
@@ -339,17 +399,22 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           className="btn btn-icon"
-          title="Reset to Default Presets & Demo Library"
-          onClick={() => {
-            if (window.confirm('Reset all styles, default schedules, and sample library to factory defaults?')) {
-              onResetToDefault();
-            }
-          }}
-          style={{ color: '#64748b' }}
+          title="Reset Session or Clear All Sessions to Default"
+          onClick={() => setIsResetModalOpen(true)}
+          style={{ color: '#94a3b8' }}
         >
           <RotateCcw size={14} />
         </button>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      <ResetConfirmModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        currentSessionId={sessionId}
+        onResetCurrentSession={onResetToDefault}
+        onResetAllSessions={onResetAllToDefault || onResetToDefault}
+      />
 
       {/* Quick Ticker / Alert Modal */}
       {isAlertModalOpen && (

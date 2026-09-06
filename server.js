@@ -722,6 +722,7 @@ const MIME = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
 };
 
 // --- Bible Provider Config & Helpers ---
@@ -916,8 +917,17 @@ const server = http.createServer((req, res) => {
 
   // REST API Endpoints
   if (pathname === "/api/state") {
+    const sid = parsedUrl.searchParams.get("session") || "default";
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(state));
+    res.end(JSON.stringify(getSession(sid)));
+    return;
+  }
+
+  // Clear all sessions and reset to default
+  if ((pathname === "/api/reset-all" || pathname === "/api/reset") && req.method === "POST") {
+    resetAllSessionsToDefault();
+    res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+    res.end(JSON.stringify({ status: "ok", message: "All sessions cleared and reset to default presets." }));
     return;
   }
 
@@ -1364,12 +1374,40 @@ wss.on("connection", (ws, req) => {
           saveStoreToDisk();
         }
         break;
+      case "resetAllToDefault":
+        resetAllSessionsToDefault();
+        return;
       default:
         return;
     }
     broadcast(currentSessionId);
   });
 });
+
+function resetAllSessionsToDefault() {
+  for (const s of sessions.values()) {
+    clearAdvanceTimer(s);
+  }
+  sessions.clear();
+  const defaultSession = createInitialSessionState(null);
+  sessions.set("default", defaultSession);
+  saveStoreToDisk();
+
+  const payload = JSON.stringify({ type: "state", state: defaultSession, sessionId: "default" });
+  const notifPayload = JSON.stringify({
+    type: "notification",
+    message: "All sessions have been cleared and reset to factory defaults.",
+    variant: "success",
+  });
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.sessionId = "default";
+      client.send(payload);
+      client.send(notifPayload);
+    }
+  });
+}
 
 server.listen(PORT, "0.0.0.0", () => {
   const nets = os.networkInterfaces();
@@ -1414,25 +1452,29 @@ server.listen(PORT, "0.0.0.0", () => {
 function flushStoreSync() {
   clearTimeout(saveDebounceTimer);
   try {
-    const toSave = {
-      title: state.title,
-      subtitle: state.subtitle,
-      category: state.category,
-      lines: state.lines,
-      wpm: state.wpm,
-      theme: state.theme,
-      timerState: {
-        ...state.timerState,
-        status: "idle",
-        startedAt: null,
-        targetEndTime: null,
-      },
-      currentScheduleId: state.currentScheduleId,
-      schedule: state.schedule,
-      savedSchedules: state.savedSchedules,
-      library: state.library,
-    };
-    fs.writeFileSync(STORE_PATH, JSON.stringify(toSave, null, 2), "utf-8");
+    const sessionsObj = {};
+    for (const [id, s] of sessions.entries()) {
+      sessionsObj[id] = {
+        title: s.title,
+        subtitle: s.subtitle,
+        category: s.category,
+        lines: s.lines,
+        wpm: s.wpm,
+        theme: s.theme,
+        timerState: {
+          ...s.timerState,
+          status: "idle",
+          startedAt: null,
+          targetEndTime: null,
+        },
+        currentScheduleId: s.currentScheduleId,
+        schedule: s.schedule,
+        savedSchedules: s.savedSchedules,
+        library: s.library,
+        updatedAt: Date.now(),
+      };
+    }
+    fs.writeFileSync(STORE_PATH, JSON.stringify({ sessions: sessionsObj }, null, 2), "utf-8");
   } catch (err) {
     console.error("Failed to flush store to disk on shutdown:", err);
   }

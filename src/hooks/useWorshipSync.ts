@@ -374,6 +374,41 @@ export function useWorshipSync() {
     send({ type: 'resetToDefault' });
   }, [send]);
 
+  const resetAllToDefault = useCallback(() => {
+    // Send reset message to server
+    send({ type: 'resetAllToDefault' });
+
+    // Try fallback REST POST in case WS was disconnected
+    try {
+      fetch('/api/reset-all', { method: 'POST' }).catch(() => {});
+    } catch {}
+
+    // Clean up all local storage keys related to sessions and saved data
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('easystream_') || key.startsWith('easypresenter_'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+      // Re-initialize default session key
+      localStorage.setItem(SESSION_STORAGE_KEY, 'default');
+      localStorage.setItem(
+        SAVED_SESSIONS_KEY,
+        JSON.stringify([{ id: 'default', name: 'Main Sanctuary / Default', updatedAt: Date.now() }])
+      );
+    } catch (e) {
+      console.warn('[WorshipSync] Failed to clear local storage during reset:', e);
+    }
+
+    // Reset local state to default
+    setSessionIdState('default');
+    setState(INITIAL_STATE);
+  }, [send]);
+
   // Timer Control Helpers
   const startTimer = useCallback((durationSec?: number, title?: string) => {
     send({ type: 'startTimer', durationSec, title });
@@ -494,5 +529,6 @@ export function useWorshipSync() {
     saveLibraryItem,
     deleteLibraryItem,
     resetToDefault,
+    resetAllToDefault,
   };
 }

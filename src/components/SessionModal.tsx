@@ -8,6 +8,7 @@ interface SessionModalProps {
   currentSessionId: string;
   onSwitchSession: (sessionId: string) => void;
   onSaveSession: (sessionName?: string) => void;
+  onResetAllSessions?: () => void;
   isStartupPrompt?: boolean;
 }
 
@@ -19,12 +20,14 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   currentSessionId,
   onSwitchSession,
   onSaveSession,
+  onResetAllSessions,
   isStartupPrompt = false,
 }) => {
   const [sessionInput, setSessionInput] = useState('');
   const [sessionNameInput, setSessionNameInput] = useState('');
   const [savedSessions, setSavedSessions] = useState<SessionMeta[]>([]);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [isResetConfirming, setIsResetConfirming] = useState(false);
 
   // Load saved sessions from localStorage
   useEffect(() => {
@@ -310,26 +313,88 @@ export const SessionModal: React.FC<SessionModalProps> = ({
         </form>
 
         {/* Footer actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '1.5rem' }}>
-          {isStartupPrompt ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ padding: '8px 20px', fontWeight: 800, fontSize: '13px' }}
-              onClick={() => handleSelectSession(currentSessionId || 'default')}
-            >
-              Continue to Studio <ArrowRight size={14} />
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1.5rem' }}>
+          {onResetAllSessions ? (
+            <div>
+              {!isResetConfirming ? (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{
+                    fontSize: '11px',
+                    padding: '6px 12px',
+                    color: '#f87171',
+                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    fontWeight: 700,
+                    gap: '6px',
+                  }}
+                  onClick={() => setIsResetConfirming(true)}
+                  title="Clear all custom rooms and restore factory defaults"
+                >
+                  <Trash2 size={13} />
+                  Clear All Sessions & Reset
+                </button>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: '#f87171', fontWeight: 800 }}>
+                    Are you sure?
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    style={{ fontSize: '11px', padding: '4px 10px', fontWeight: 800 }}
+                    onClick={() => {
+                      setIsResetConfirming(false);
+                      onResetAllSessions();
+                      setSavedSessions([
+                        { id: 'default', name: 'Main Sanctuary / Default', updatedAt: Date.now() },
+                      ]);
+                      setSaveSuccessMessage('All sessions cleared and reset to factory defaults!');
+                      setTimeout(() => {
+                        setSaveSuccessMessage(null);
+                        onClose();
+                      }, 1200);
+                    }}
+                  >
+                    Yes, Purge Everything
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ fontSize: '11px', padding: '4px 8px' }}
+                    onClick={() => setIsResetConfirming(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <button
-              type="button"
-              className="btn"
-              style={{ padding: '8px 18px', fontSize: '13px' }}
-              onClick={onClose}
-            >
-              Close
-            </button>
+            <div />
           )}
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {isStartupPrompt ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '8px 20px', fontWeight: 800, fontSize: '13px' }}
+                onClick={() => handleSelectSession(currentSessionId || 'default')}
+              >
+                Continue to Studio <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn"
+                style={{ padding: '8px 18px', fontSize: '13px' }}
+                onClick={onClose}
+              >
+                Close
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
