@@ -28,8 +28,10 @@ interface HeaderProps {
   onUpdateLiveState: (update: Partial<LiveState>) => void;
   onSetQuickAlert: (text: string | null) => void;
   onOpenLibrary: () => void;
+  onOpenScriptures: () => void;
   onOpenOnlineSearch: () => void;
   onOpenTimer: () => void;
+  onSetTimerConfig?: (config: Partial<TimerState>) => void;
   onResetToDefault: () => void;
   onResetAllToDefault?: () => void;
 }
@@ -43,8 +45,10 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateLiveState,
   onSetQuickAlert,
   onOpenLibrary,
+  onOpenScriptures,
   onOpenOnlineSearch,
   onOpenTimer,
+  onSetTimerConfig,
   onResetToDefault,
   onResetAllToDefault,
 }) => {
@@ -73,6 +77,33 @@ export const Header: React.FC<HeaderProps> = ({
   const secs = absSec % 60;
   const pad = (n: number) => n.toString().padStart(2, '0');
   const timerBadgeStr = `${isOvertime ? '-' : ''}${pad(mins)}:${pad(secs)}`;
+
+  // Global hotkeys (Alt+B or F3 for Quick Scripture lookup)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
+
+      if (e.key === 'F3' || (e.altKey && (e.key === 'b' || e.key === 'B' || e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        onOpenScriptures();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onOpenScriptures]);
+
+  const toggleDisplayTimer = () => {
+    if (onSetTimerConfig) {
+      onSetTimerConfig({ showOnDisplay: !timerState.showOnDisplay });
+    }
+  };
+
+  const toggleDisplayClock = () => {
+    if (onSetTimerConfig) {
+      onSetTimerConfig({ showClockOnDisplay: !timerState.showClockOnDisplay });
+    }
+  };
 
   const toggleBlackout = () => {
     onUpdateLiveState({ isBlackout: !liveState.isBlackout });
@@ -318,21 +349,22 @@ export const Header: React.FC<HeaderProps> = ({
           style={{
             fontSize: '12px',
             padding: '6px 12px',
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(56, 189, 248, 0.2))',
-            borderColor: 'rgba(56, 189, 248, 0.4)',
+            background: 'rgba(56, 189, 248, 0.12)',
+            borderColor: 'rgba(56, 189, 248, 0.35)',
             color: '#38bdf8',
             fontWeight: 700,
+            gap: '6px',
           }}
           onClick={onOpenOnlineSearch}
-          title="Search Bible scripture verses and worship song lyrics online"
+          title="Search song lyrics and media online"
         >
           <Search size={13} />
-          Search Online (Lyrics & Scripture)
+          Search Lyrics
         </button>
 
         <button 
-          className="btn btn-primary"
-          style={{ fontSize: '12px', padding: '6px 12px' }}
+          className="btn"
+          style={{ fontSize: '12px', padding: '6px 12px', background: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
           onClick={onOpenLibrary}
         >
           <BookOpen size={14} />

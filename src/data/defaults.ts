@@ -73,6 +73,9 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   autoAdvance: false,
   showNextProgramAlert: true,
   fontSizeScale: 100,
+  showOnDisplay: true,
+  showClockOnDisplay: true,
+  timerPosition: 'top-right',
 };
 
 export const DEFAULT_THEME: PresentationTheme = {

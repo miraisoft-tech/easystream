@@ -552,84 +552,134 @@ export const TimerModal: React.FC<TimerModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Display & Font Size Controls Strip */}
+          {/* Quick Display & Live Screen Controls Strip */}
           <div style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
             background: 'rgba(56, 189, 248, 0.05)',
             border: '1px solid rgba(56, 189, 248, 0.2)',
             borderRadius: '12px',
-            padding: '10px 14px',
+            padding: '12px 16px',
             gap: '12px',
-            flexWrap: 'wrap'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '6px',
-                background: 'rgba(56, 189, 248, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#38bdf8',
-              }}>
-                <Type size={15} />
-              </div>
-              <div>
+            {/* Row 1: Live Presentation Display Toggles & Position */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tv size={16} color="#38bdf8" />
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
-                  Display Font Size
+                  Live Display Overlay (/display)
                 </span>
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '6px' }}>
-                  (Confidence monitor digits scale)
-                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#e2e8f0', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={timerState.showOnDisplay ?? true}
+                    onChange={(e) => onSetTimerConfig({ showOnDisplay: e.target.checked })}
+                  />
+                  <span>Show Timer on Screen</span>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#e2e8f0', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={timerState.showClockOnDisplay ?? true}
+                    onChange={(e) => onSetTimerConfig({ showClockOnDisplay: e.target.checked })}
+                  />
+                  <span>Show Real-World Clock</span>
+                </label>
+
+                <select
+                  value={timerState.timerPosition || 'top-right'}
+                  onChange={(e) => onSetTimerConfig({ timerPosition: e.target.value as any })}
+                  style={{
+                    background: '#0f172a',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    borderRadius: '6px',
+                    color: '#38bdf8',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    cursor: 'pointer',
+                  }}
+                  title="Screen Position"
+                >
+                  <option value="top-right">Top-Right</option>
+                  <option value="top-left">Top-Left</option>
+                  <option value="bottom-right">Bottom-Right</option>
+                  <option value="bottom-left">Bottom-Left</option>
+                  <option value="top-center">Top-Center</option>
+                </select>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {[100, 125, 150, 175, 200, 250].map((scale) => {
-                  const isSelected = (timerState.fontSizeScale || 100) === scale;
-                  return (
-                    <button
-                      key={scale}
-                      type="button"
-                      className={`btn ${isSelected ? 'btn-primary' : ''}`}
-                      style={{
-                        fontSize: '11px',
-                        padding: '4px 8px',
-                        fontWeight: 700,
-                        background: isSelected ? '#0284c7' : 'rgba(255, 255, 255, 0.05)',
-                        borderColor: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.12)',
-                      }}
-                      onClick={() => onSetTimerConfig({ fontSizeScale: scale })}
-                    >
-                      {scale}%
-                    </button>
-                  );
-                })}
+            {/* Row 2: Display Font Size */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '6px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#38bdf8',
+                }}>
+                  <Type size={14} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}>
+                    Confidence Digits Scale
+                  </span>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <input
-                  type="range"
-                  min={80}
-                  max={300}
-                  step={5}
-                  value={timerState.fontSizeScale || 100}
-                  onChange={(e) => onSetTimerConfig({ fontSizeScale: Number(e.target.value) })}
-                  style={{ width: '80px', accentColor: '#38bdf8', cursor: 'pointer' }}
-                />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  color: '#38bdf8',
-                  minWidth: '38px',
-                  fontVariantNumeric: 'tabular-nums'
-                }}>
-                  {timerState.fontSizeScale || 100}%
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {[100, 125, 150, 175, 200, 250].map((scale) => {
+                    const isSelected = (timerState.fontSizeScale || 100) === scale;
+                    return (
+                      <button
+                        key={scale}
+                        type="button"
+                        className={`btn ${isSelected ? 'btn-primary' : ''}`}
+                        style={{
+                          fontSize: '11px',
+                          padding: '3px 7px',
+                          fontWeight: 700,
+                          background: isSelected ? '#0284c7' : 'rgba(255, 255, 255, 0.05)',
+                          borderColor: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.12)',
+                        }}
+                        onClick={() => onSetTimerConfig({ fontSizeScale: scale })}
+                      >
+                        {scale}%
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type="range"
+                    min={80}
+                    max={300}
+                    step={5}
+                    value={timerState.fontSizeScale || 100}
+                    onChange={(e) => onSetTimerConfig({ fontSizeScale: Number(e.target.value) })}
+                    style={{ width: '70px', accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#38bdf8',
+                    minWidth: '34px',
+                    fontVariantNumeric: 'tabular-nums'
+                  }}>
+                    {timerState.fontSizeScale || 100}%
+                  </span>
+                </div>
               </div>
             </div>
           </div>

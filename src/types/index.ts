@@ -108,6 +108,9 @@ export interface TimerState {
   autoAdvance: boolean;       // Automatically advance and start the next slot on 00:00
   showNextProgramAlert: boolean; // Slide 'Next program: ...' banner on time up
   fontSizeScale?: number;     // Font size percentage scale for timer display digits (e.g. 100, 150, 200)
+  showOnDisplay?: boolean;    // Show countdown / overtime timer on the live display
+  showClockOnDisplay?: boolean;// Show current real-world clock time on the live display
+  timerPosition?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center'; // Position on live display
 }
 
 export interface AppState {

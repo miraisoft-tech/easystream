@@ -5,6 +5,7 @@ import { SchedulePanel } from './components/SchedulePanel';
 import { LiveConsole } from './components/LiveConsole';
 import { StyleEditor } from './components/StyleEditor';
 import { LibraryModal } from './components/LibraryModal';
+import { ScriptureModal } from './components/ScriptureModal';
 import { OnlineLyricsSearchModal } from './components/OnlineLyricsSearchModal';
 import { DisplayView } from './components/DisplayView';
 import { StageView } from './components/StageView';
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
   } = useWorshipSync();
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isScriptureOpen, setIsScriptureOpen] = useState(false);
   const [isOnlineSearchOpen, setIsOnlineSearchOpen] = useState(false);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
@@ -119,8 +121,10 @@ export const App: React.FC = () => {
         onUpdateLiveState={updateLiveState}
         onSetQuickAlert={setQuickAlert}
         onOpenLibrary={() => setIsLibraryOpen(true)}
+        onOpenScriptures={() => setIsScriptureOpen(true)}
         onOpenOnlineSearch={() => setIsOnlineSearchOpen(true)}
         onOpenTimer={() => setIsTimerOpen(true)}
+        onSetTimerConfig={setTimerConfig}
         onResetToDefault={resetToDefault}
         onResetAllToDefault={resetAllToDefault}
       />
@@ -150,6 +154,7 @@ export const App: React.FC = () => {
           onRestart={restart}
           onSetWpm={setWpm}
           onSetLines={setLines}
+          onOpenScriptures={() => setIsScriptureOpen(true)}
         />
 
         {/* Right Column: EasyWorship Style & Theme Inspector */}
@@ -158,6 +163,16 @@ export const App: React.FC = () => {
           onUpdateTheme={updateTheme}
         />
       </div>
+
+      {/* Dedicated Scripture Search & Projection Modal */}
+      <ScriptureModal
+        isOpen={isScriptureOpen}
+        onClose={() => setIsScriptureOpen(false)}
+        library={state.library}
+        onSaveLibraryItem={saveLibraryItem}
+        onAddToSchedule={handleAddToSchedule}
+        onGoLiveWithItem={handleGoLiveWithLibraryItem}
+      />
 
       {/* Song & Scripture Library Drawer / Modal */}
       <LibraryModal

@@ -8,7 +8,8 @@ import {
   Edit3, 
   Clock, 
   Activity,
-  Check
+  Check,
+  BookOpen
 } from 'lucide-react';
 import { AppState } from '../types';
 
@@ -20,6 +21,7 @@ interface LiveConsoleProps {
   onRestart: () => void;
   onSetWpm: (wpm: number) => void;
   onSetLines: (title: string, subtitle: string, lines: string[], category?: AppState['category']) => void;
+  onOpenScriptures?: () => void;
 }
 
 export const LiveConsole: React.FC<LiveConsoleProps> = ({
@@ -30,6 +32,7 @@ export const LiveConsole: React.FC<LiveConsoleProps> = ({
   onRestart,
   onSetWpm,
   onSetLines,
+  onOpenScriptures,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(state.title);
@@ -143,6 +146,26 @@ export const LiveConsole: React.FC<LiveConsoleProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onOpenScriptures && (
+            <button
+              className="btn"
+              style={{
+                fontSize: '12px',
+                padding: '6px 12px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                borderColor: 'rgba(245, 158, 11, 0.4)',
+                color: '#fbbf24',
+                fontWeight: 700,
+                gap: '6px',
+              }}
+              onClick={onOpenScriptures}
+              title="Quick Scripture Lookup & Projection (F3 or Alt+B)"
+            >
+              <BookOpen size={13} color="#f59e0b" />
+              Quick Scripture (F3)
+            </button>
+          )}
+
           <button
             className="btn"
             style={{ fontSize: '12px', padding: '6px 12px' }}
