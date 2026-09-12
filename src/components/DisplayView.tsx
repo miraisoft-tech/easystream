@@ -272,8 +272,30 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
     cleanVerseText = cleanVerseText.replace(/^["“](.*)["”]$/, '$1').trim();
   }
 
+  // Compute next scripture preview
+  let nextScripturePreview = '';
+  if (isScriptureCategory) {
+    if (displayedNext) {
+      const nextParts = displayedNext.split(/\n\s*\n/);
+      let nextText = nextParts[0].trim();
+      let nextRef = '';
+      if (nextParts.length > 1) {
+        nextRef = nextParts[nextParts.length - 1].replace(/^[—\-]\s*/, '').trim();
+      }
+      nextText = nextText.replace(/^\d+[\s:.]\s*/, '').trim();
+      if (nextRef) {
+        nextScripturePreview = `${nextRef} — "${nextText.length > 85 ? nextText.slice(0, 85) + '…' : nextText}"`;
+      } else {
+        nextScripturePreview = `"${nextText.length > 95 ? nextText.slice(0, 95) + '…' : nextText}"`;
+      }
+    } else if (state.schedule && state.schedule[state.activeScheduleIndex + 1]) {
+      const nextItem = state.schedule[state.activeScheduleIndex + 1];
+      nextScripturePreview = `${nextItem.title}`;
+    }
+  }
+
   const effectiveFontSize = isScriptureCategory
-    ? Math.max(theme.fontSize, 46)
+    ? Math.max(theme.fontSize, 58)
     : theme.fontSize;
 
   return (
@@ -581,7 +603,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
       {!liveState.isBlackout && !liveState.isLogo && !liveState.isClearText && (
         <div
           style={{
-            maxWidth: '1280px',
+            maxWidth: '1360px',
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
@@ -591,7 +613,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             transform: fading ? 'translateY(10px) scale(0.98)' : 'translateY(0) scale(1)',
             transition: 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             padding: '2rem 1.5rem',
-            marginTop: (!liveState.isBlackout && (showTimerWidget || showClockWidget)) ? '4rem' : '0',
+            marginTop: (!liveState.isBlackout && (showTimerWidget || showClockWidget)) ? '5.5rem' : '0',
             ...(effectiveOverlay && {
               background: 'rgba(0, 0, 0, 0.65)',
               padding: '2rem 3rem',
@@ -602,7 +624,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             }),
           }}
         >
-          {/* Scripture Specific Layout (Quotation Mark + Italic Serif + Flanked Reference) */}
+          {/* Scripture Specific Layout (Quotation Mark + Bigger Italic Serif + Flanked Reference + Next Preview) */}
           {isScriptureCategory ? (
             <div
               style={{
@@ -617,30 +639,30 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
               <div
                 style={{
                   alignSelf: 'flex-start',
-                  marginBottom: '1.25rem',
+                  marginBottom: '1rem',
                   opacity: 0.9,
                   marginLeft: '0.5rem',
                 }}
               >
-                <svg width="46" height="38" viewBox="0 0 32 28" fill="#2d3139">
+                <svg width="48" height="40" viewBox="0 0 32 28" fill="#2d3139">
                   <path d="M0 16.5C0 9.8 4.2 3.5 11.8 0L14 4.1C9.6 6.3 7.8 9.3 7.3 12.3H14V28H0V16.5ZM18 16.5C18 9.8 22.2 3.5 29.8 0L32 4.1C27.6 6.3 25.8 9.3 25.3 12.3H32V28H18V16.5Z" />
                 </svg>
               </div>
 
-              {/* Italic Serif Scripture Verse Text */}
+              {/* Bigger Italic Serif Scripture Verse Text */}
               <div
                 style={{
                   fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
-                  fontSize: `${effectiveFontSize}px`,
+                  fontSize: `clamp(46px, 5.4vw, 76px)`,
                   fontWeight: 600,
                   fontStyle: 'italic',
                   color: '#ffffff',
-                  lineHeight: 1.5,
+                  lineHeight: 1.48,
                   letterSpacing: '-0.01em',
-                  textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 15px rgba(0, 0, 0, 0.8)',
+                  textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 18px rgba(0, 0, 0, 0.85)',
                   whiteSpace: 'pre-line',
                   wordBreak: 'break-word',
-                  maxWidth: '1150px',
+                  maxWidth: '1240px',
                 }}
               >
                 {cleanVerseText}
@@ -658,19 +680,50 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                     width: '100%',
                   }}
                 >
-                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.22)' }} />
+                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.25)' }} />
                   <span
                     style={{
                       fontFamily: 'Inter, Montserrat, sans-serif',
-                      fontSize: 'clamp(16px, 1.8vw, 22px)',
+                      fontSize: 'clamp(18px, 2vw, 24px)',
                       fontWeight: 700,
-                      color: '#cbd5e1',
+                      color: '#e2e8f0',
                       letterSpacing: '0.04em',
                     }}
                   >
                     {citationRef}
                   </span>
-                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.22)' }} />
+                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.25)' }} />
+                </div>
+              )}
+
+              {/* Next Following Chapter / Verse Preview (Small Font) */}
+              {nextScripturePreview && (
+                <div
+                  style={{
+                    marginTop: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontSize: 'clamp(12px, 1.25vw, 15px)',
+                    fontWeight: 500,
+                    fontStyle: 'italic',
+                    maxWidth: '850px',
+                    textAlign: 'center',
+                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.85)',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    padding: '6px 18px',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  <span style={{ fontWeight: 800, fontStyle: 'normal', color: '#38bdf8', fontSize: '0.85em', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    NEXT:
+                  </span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {nextScripturePreview}
+                  </span>
                 </div>
               )}
             </div>
