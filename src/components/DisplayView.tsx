@@ -644,25 +644,25 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                   marginLeft: '0.5rem',
                 }}
               >
-                <svg width="48" height="40" viewBox="0 0 32 28" fill="#2d3139">
+                <svg width="56" height="46" viewBox="0 0 32 28" fill="#2d3139">
                   <path d="M0 16.5C0 9.8 4.2 3.5 11.8 0L14 4.1C9.6 6.3 7.8 9.3 7.3 12.3H14V28H0V16.5ZM18 16.5C18 9.8 22.2 3.5 29.8 0L32 4.1C27.6 6.3 25.8 9.3 25.3 12.3H32V28H18V16.5Z" />
                 </svg>
               </div>
 
-              {/* Bigger Italic Serif Scripture Verse Text */}
+              {/* Extra-Large Italic Serif Scripture Verse Text */}
               <div
                 style={{
                   fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
-                  fontSize: `clamp(46px, 5.4vw, 76px)`,
-                  fontWeight: 600,
+                  fontSize: `clamp(58px, 7.2vw, 102px)`,
+                  fontWeight: 800,
                   fontStyle: 'italic',
                   color: '#ffffff',
-                  lineHeight: 1.48,
-                  letterSpacing: '-0.01em',
-                  textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 18px rgba(0, 0, 0, 0.85)',
+                  lineHeight: 1.38,
+                  letterSpacing: '-0.015em',
+                  textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 20px rgba(0, 0, 0, 0.9)',
                   whiteSpace: 'pre-line',
                   wordBreak: 'break-word',
-                  maxWidth: '1240px',
+                  maxWidth: '1440px',
                 }}
               >
                 {cleanVerseText}
@@ -680,94 +680,128 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                     width: '100%',
                   }}
                 >
-                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.25)' }} />
+                  <div style={{ width: '70px', height: '1.5px', background: 'rgba(255, 255, 255, 0.25)' }} />
                   <span
                     style={{
                       fontFamily: 'Inter, Montserrat, sans-serif',
-                      fontSize: 'clamp(18px, 2vw, 24px)',
-                      fontWeight: 700,
+                      fontSize: 'clamp(20px, 2.2vw, 28px)',
+                      fontWeight: 800,
                       color: '#e2e8f0',
                       letterSpacing: '0.04em',
                     }}
                   >
                     {citationRef}
                   </span>
-                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.25)' }} />
-                </div>
-              )}
-
-              {/* Next Following Chapter / Verse Preview (Small Font) */}
-              {nextScripturePreview && (
-                <div
-                  style={{
-                    marginTop: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    color: 'rgba(255, 255, 255, 0.6)',
-                    fontSize: 'clamp(12px, 1.25vw, 15px)',
-                    fontWeight: 500,
-                    fontStyle: 'italic',
-                    maxWidth: '850px',
-                    textAlign: 'center',
-                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.85)',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    padding: '6px 18px',
-                    borderRadius: '999px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                  }}
-                >
-                  <span style={{ fontWeight: 800, fontStyle: 'normal', color: '#38bdf8', fontSize: '0.85em', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    NEXT:
-                  </span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {nextScripturePreview}
-                  </span>
+                  <div style={{ width: '70px', height: '1.5px', background: 'rgba(255, 255, 255, 0.25)' }} />
                 </div>
               )}
             </div>
           ) : (
             /* General Song / Hymn Slide Text */
-            <>
-              <div
-                style={{
-                  fontFamily: theme.fontFamily,
-                  fontSize: `${theme.fontSize}px`,
-                  fontWeight: theme.fontWeight,
-                  fontStyle: theme.fontStyle,
-                  textTransform: theme.textTransform,
-                  color: theme.textColor,
-                  lineHeight: theme.lineHeight,
-                  letterSpacing: `${theme.letterSpacing}px`,
-                  textShadow: combinedTextShadow,
-                  whiteSpace: 'pre-line',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {displayedLine}
-              </div>
-
-              {/* Next Slide Preview (Subtle Prompt for Congregation / Singer) */}
-              {theme.showNextPreview && displayedNext && (
-                <div
-                  style={{
-                    fontFamily: theme.fontFamily,
-                    fontSize: `${Math.round(theme.fontSize * 0.45)}px`,
-                    fontWeight: 500,
-                    fontStyle: 'italic',
-                    color: 'rgba(255, 255, 255, 0.65)',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.85)',
-                    maxWidth: '900px',
-                    marginTop: '1.5rem',
-                  }}
-                >
-                  Next: {displayedNext.replace(/\n/g, ' ')}
-                </div>
-              )}
-            </>
+            <div
+              style={{
+                fontFamily: theme.fontFamily,
+                fontSize: `${theme.fontSize}px`,
+                fontWeight: theme.fontWeight,
+                fontStyle: theme.fontStyle,
+                textTransform: theme.textTransform,
+                color: theme.textColor,
+                lineHeight: theme.lineHeight,
+                letterSpacing: `${theme.letterSpacing}px`,
+                textShadow: combinedTextShadow,
+                whiteSpace: 'pre-line',
+                wordBreak: 'break-word',
+              }}
+            >
+              {displayedLine}
+            </div>
           )}
         </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 3. BOTTOM DISPLAY BAR: NEXT VERSE / SLIDE PREVIEW             */}
+      {/* ------------------------------------------------------------- */}
+      {!liveState.isBlackout && !liveState.isLogo && !liveState.isClearText && (
+        isScriptureCategory ? (
+          nextScripturePreview ? (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '1.75rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                color: 'rgba(255, 255, 255, 0.65)',
+                fontSize: 'clamp(12px, 1.25vw, 15px)',
+                fontWeight: 500,
+                fontStyle: 'italic',
+                maxWidth: '900px',
+                width: 'max-content',
+                textAlign: 'center',
+                textShadow: '0 2px 10px rgba(0, 0, 0, 0.85)',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(12px)',
+                padding: '7px 22px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.55)',
+                zIndex: 40,
+                pointerEvents: 'none',
+                animation: 'fadeIn 0.3s ease',
+              }}
+            >
+              <span style={{ fontWeight: 800, fontStyle: 'normal', color: '#38bdf8', fontSize: '0.85em', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                NEXT:
+              </span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '750px' }}>
+                {nextScripturePreview}
+              </span>
+            </div>
+          ) : null
+        ) : (
+          theme.showNextPreview && displayedNext ? (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '1.75rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                color: 'rgba(255, 255, 255, 0.65)',
+                fontSize: 'clamp(12px, 1.25vw, 15px)',
+                fontWeight: 500,
+                fontStyle: 'italic',
+                maxWidth: '900px',
+                width: 'max-content',
+                textAlign: 'center',
+                textShadow: '0 2px 10px rgba(0, 0, 0, 0.85)',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(12px)',
+                padding: '7px 22px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.55)',
+                zIndex: 40,
+                pointerEvents: 'none',
+                animation: 'fadeIn 0.3s ease',
+              }}
+            >
+              <span style={{ fontWeight: 800, fontStyle: 'normal', color: '#38bdf8', fontSize: '0.85em', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                NEXT:
+              </span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '750px' }}>
+                {displayedNext.replace(/\n/g, ' ')}
+              </span>
+            </div>
+          ) : null
+        )
       )}
     </div>
   );
