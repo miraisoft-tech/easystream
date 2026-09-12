@@ -212,18 +212,68 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
 
   const formattedTimerStr =
     timerHours > 0
-      ? `${isOvertime ? '-' : ''}${timerHours}:${pad(timerMins)}:${pad(timerSecs)}`
-      : `${isOvertime ? '-' : ''}${timerMins}:${pad(timerSecs)}`;
+      ? `${isOvertime ? '-' : ''}${pad(timerHours)}:${pad(timerMins)}:${pad(timerSecs)}`
+      : `${isOvertime ? '-' : ''}${pad(timerMins)}:${pad(timerSecs)}`;
 
-  // Format real-world clock time (e.g. 20:57)
+  // Format real-world clock time in 12-hour format (e.g. 12:26:13 PM) + Date (Sat, Sep 12, 2026)
   const realClockDate = new Date(now);
-  const clockHours = realClockDate.getHours().toString().padStart(2, '0');
+  const clockHours24 = realClockDate.getHours();
   const clockMinutes = realClockDate.getMinutes().toString().padStart(2, '0');
-  const formattedClockTime = `${clockHours}:${clockMinutes}`;
+  const clockSeconds = realClockDate.getSeconds().toString().padStart(2, '0');
+  const ampm = clockHours24 >= 12 ? 'PM' : 'AM';
+  const clockHours12 = (clockHours24 % 12 || 12).toString().padStart(2, '0');
+  const formattedClockTime = `${clockHours12}:${clockMinutes}:${clockSeconds}`;
 
-  const isScriptureCategory = state.category === 'scripture';
+  const formattedDateStr = realClockDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  // -------------------------------------------------------------
+  // Scripture & Content Parsing
+  // -------------------------------------------------------------
+  const isScriptureCategory =
+    state.category === 'scripture' ||
+    /\b(?:Genesis|Exodus|Leviticus|Numbers|Deuteronomy|Joshua|Judges|Ruth|Samuel|Kings|Chronicles|Ezra|Nehemiah|Esther|Job|Psalm|Psalms|Proverbs|Ecclesiastes|Song|Isaiah|Jeremiah|Lamentations|Ezekiel|Daniel|Hosea|Joel|Amos|Obadiah|Jonah|Micah|Nahum|Habakkuk|Zephaniah|Haggai|Zechariah|Malachi|Matthew|Mark|Luke|John|Acts|Romans|Corinthians|Galatians|Ephesians|Philippians|Colossians|Thessalonians|Timothy|Titus|Philemon|Hebrews|James|Peter|Jude|Revelation)\b/i.test(
+      state.title
+    );
+
+  // Parse slide text to separate verse content from embedded citation headers
+  let cleanVerseText = displayedLine;
+  let citationRef = '';
+
+  if (isScriptureCategory) {
+    const doubleNewlineParts = displayedLine.split(/\n\s*\n/);
+    if (doubleNewlineParts.length > 1) {
+      const lastPart = doubleNewlineParts[doubleNewlineParts.length - 1].trim();
+      // Check if last part looks like a scripture reference
+      const looksLikeRef =
+        /^[1-3]?\s*[A-Za-z\s]+(?:\s+\d+(?::\d+(?:-\d+)?)?)?(?:\s*\([A-Z0-9]+\))?$/i.test(lastPart) ||
+        lastPart.startsWith('—') ||
+        lastPart.startsWith('-');
+      if (looksLikeRef && lastPart.length < 60) {
+        citationRef = lastPart.replace(/^[—\-]\s*/, '').trim();
+        cleanVerseText = doubleNewlineParts.slice(0, -1).join('\n\n').trim();
+      }
+    }
+
+    if (!citationRef) {
+      citationRef = state.title;
+    }
+
+    // Clean leading verse number if single verse is displayed (e.g. "16 For God so loved..." -> "For God so loved...")
+    if (/^\d+[\s:.]\s+/.test(cleanVerseText) && !cleanVerseText.includes('\n\n')) {
+      cleanVerseText = cleanVerseText.replace(/^\d+[\s:.]\s+/, '');
+    }
+
+    // Clean outer quotes if already wrapped
+    cleanVerseText = cleanVerseText.replace(/^["“](.*)["”]$/, '$1').trim();
+  }
+
   const effectiveFontSize = isScriptureCategory
-    ? Math.max(theme.fontSize, 50)
+    ? Math.max(theme.fontSize, 46)
     : theme.fontSize;
 
   return (
@@ -240,13 +290,14 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: effectiveOverlay || theme.displayMode === 'lower-third' ? '2.5rem 3rem' : '4rem 5rem',
+        background: effectiveOverlay ? 'transparent' : (theme.bgType === 'solid' ? theme.bgColor : '#121316'),
+        padding: effectiveOverlay || theme.displayMode === 'lower-third' ? '2.5rem 3rem' : '3.5rem 4.5rem',
         boxSizing: 'border-box',
         transition: 'background 0.5s ease',
         ...bgStyle,
       }}
     >
-      {/* Floating Auto-Hiding Presentation HUD (for operator) */}
+      {/* Floating Auto-Hiding Presentation HUD (Bottom Right for operator) */}
       <div className={`display-hud-controls ${showControls ? 'visible' : ''}`}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8', fontWeight: 600, paddingRight: '4px' }}>
           <Circle size={8} fill="#10b981" color="transparent" />
@@ -317,39 +368,42 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* 1. TOP HEADER: BIGGER RED TIMER COUNT (LEFT) + BIGGER CLOCK (RIGHT) */}
+      {/* 1. TOP HEADER: CYAN COUNTDOWN TIMER WITH UNDERLINE (LEFT)      */}
+      {/*    + AMBER DIGITAL CLOCK & DATE (RIGHT) + HEADER DIVIDER LINE */}
       {/* ------------------------------------------------------------- */}
       {!liveState.isBlackout && (
         <div
           style={{
             position: 'absolute',
-            top: '2.5rem',
-            left: '3.5rem',
-            right: '3.5rem',
+            top: 0,
+            left: 0,
+            right: 0,
+            padding: '2rem 3.5rem 1.5rem 3.5rem',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             zIndex: 45,
             pointerEvents: 'none',
           }}
         >
-          {/* Top Left: Extra-Big Timer Count with Overtime Badge */}
+          {/* Top Left: Cyan Countdown Timer with Matching Underline */}
           {showTimerWidget ? (
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 flexDirection: 'column',
                 alignItems: 'flex-start',
               }}
             >
               {/* Overtime indicator badge */}
               {isOvertime && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                   <span
                     style={{
                       background: '#ef4444',
                       color: '#ffffff',
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 900,
                       letterSpacing: '0.12em',
                       padding: '2px 8px',
@@ -370,8 +424,8 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
 
               <div
                 style={{
-                  fontFamily: 'Montserrat, "Outfit", sans-serif',
-                  fontSize: 'clamp(56px, 7vw, 98px)',
+                  fontFamily: 'Montserrat, "Outfit", "Inter", sans-serif',
+                  fontSize: 'clamp(68px, 8.8vw, 118px)',
                   fontWeight: 900,
                   letterSpacing: '-0.02em',
                   fontVariantNumeric: 'tabular-nums',
@@ -382,25 +436,45 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                       ? '#f97316'
                       : isWarning
                         ? '#f59e0b'
-                        : '#ffffff',
+                        : '#60a5fa', // Soft Cyan / Sky Blue
                   textShadow: isOvertime
                     ? '0 0 40px rgba(239, 68, 68, 0.9), 0 4px 15px rgba(0, 0, 0, 0.95)'
-                    : '0 4px 25px rgba(0, 0, 0, 0.85)',
+                    : '0 2px 25px rgba(96, 165, 250, 0.3), 0 4px 18px rgba(0, 0, 0, 0.85)',
                   transition: 'color 0.3s ease',
                 }}
               >
                 {formattedTimerStr}
               </div>
 
+              {/* Cyan Underline Bar directly under timer digits */}
+              <div
+                style={{
+                  height: '4px',
+                  width: '100%',
+                  background: isOvertime
+                    ? '#ef4444'
+                    : isCritical
+                      ? '#f97316'
+                      : isWarning
+                        ? '#f59e0b'
+                        : '#60a5fa',
+                  borderRadius: '2px',
+                  marginTop: '6px',
+                  boxShadow: isOvertime
+                    ? '0 0 10px rgba(239, 68, 68, 0.8)'
+                    : '0 0 10px rgba(96, 165, 250, 0.65)',
+                }}
+              />
+
               {!isOvertime && timerState.title && (
                 <span
                   style={{
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '0.1em',
-                    color: 'rgba(255, 255, 255, 0.75)',
-                    marginTop: '4px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    marginTop: '6px',
                   }}
                 >
                   {timerState.title}
@@ -409,28 +483,50 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             </div>
           ) : <div />}
 
-          {/* Top Right: Extra-Big Digital Real-World Clock (e.g. 20:57) */}
+          {/* Top Right: Amber Digital Clock (Smaller) with Seconds, AM/PM & Live Date */}
           {showClockWidget ? (
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'flex-end',
+                gap: '3px',
+                marginTop: '4px',
               }}
             >
               <div
                 style={{
-                  fontFamily: 'Montserrat, "Outfit", sans-serif',
-                  fontSize: 'clamp(56px, 7vw, 98px)',
-                  fontWeight: 900,
-                  letterSpacing: '-0.02em',
+                  fontFamily: 'Montserrat, "Outfit", "Inter", sans-serif',
+                  fontSize: 'clamp(24px, 3vw, 40px)',
+                  fontWeight: 800,
+                  letterSpacing: '0.02em',
                   fontVariantNumeric: 'tabular-nums',
-                  lineHeight: 1,
-                  color: '#ffffff',
-                  textShadow: '0 4px 25px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 255, 255, 0.35)',
+                  lineHeight: 1.1,
+                  color: '#f59e0b', // Amber / Gold
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '8px',
+                  textShadow: '0 0 20px rgba(245, 158, 11, 0.3), 0 2px 10px rgba(0, 0, 0, 0.8)',
                 }}
               >
-                {formattedClockTime}
+                <span>{formattedClockTime}</span>
+                <span style={{ fontSize: '0.72em', fontWeight: 900, letterSpacing: '0.06em' }}>
+                  {ampm}
+                </span>
+              </div>
+
+              {/* Sub-date e.g. Sat, Sep 12, 2026 */}
+              <div
+                style={{
+                  fontFamily: 'Inter, -apple-system, sans-serif',
+                  fontSize: 'clamp(11px, 1.05vw, 14px)',
+                  fontWeight: 500,
+                  color: '#94a3b8',
+                  letterSpacing: '0.02em',
+                  marginTop: '1px',
+                }}
+              >
+                {formattedDateStr}
               </div>
             </div>
           ) : <div />}
@@ -480,22 +576,22 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* 2. MAIN SLIDE CONTENT: BIG CENTERED SCRIPTURE PASSAGE & CITATION */}
+      {/* 2. MAIN SLIDE CONTENT: SCRIPTURE OR WORSHIP SONG               */}
       {/* ------------------------------------------------------------- */}
       {!liveState.isBlackout && !liveState.isLogo && !liveState.isClearText && (
         <div
           style={{
-            maxWidth: '1440px',
+            maxWidth: '1280px',
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: isScriptureCategory ? 'center' : (theme.textAlign === 'left' ? 'flex-start' : theme.textAlign === 'right' ? 'flex-end' : 'center'),
             textAlign: isScriptureCategory ? 'center' : theme.textAlign,
-            gap: '1.5rem',
             opacity: fading ? 0 : 1,
             transform: fading ? 'translateY(10px) scale(0.98)' : 'translateY(0) scale(1)',
             transition: 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            padding: '2rem 1rem',
+            padding: '2rem 1.5rem',
+            marginTop: (!liveState.isBlackout && (showTimerWidget || showClockWidget)) ? '4rem' : '0',
             ...(effectiveOverlay && {
               background: 'rgba(0, 0, 0, 0.65)',
               padding: '2rem 3rem',
@@ -506,44 +602,121 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             }),
           }}
         >
-          {/* Main Slide Text */}
-          <div
-            style={{
-              fontFamily: theme.fontFamily,
-              fontSize: `${theme.fontSize}px`,
-              fontWeight: theme.fontWeight,
-              fontStyle: theme.fontStyle,
-              textTransform: theme.textTransform,
-              color: theme.textColor,
-              lineHeight: theme.lineHeight,
-              letterSpacing: `${theme.letterSpacing}px`,
-              textShadow: combinedTextShadow,
-              whiteSpace: 'pre-line',
-              wordBreak: 'break-word',
-            }}
-          >
-            {displayedLine}
-          </div>
-
-          {/* Next Slide Preview (Subtle Prompt for Congregation / Singer) */}
-          {theme.showNextPreview && displayedNext && (
+          {/* Scripture Specific Layout (Quotation Mark + Italic Serif + Flanked Reference) */}
+          {isScriptureCategory ? (
             <div
               style={{
-                fontFamily: theme.fontFamily,
-                fontSize: `${Math.round(theme.fontSize * 0.45)}px`,
-                fontWeight: 500,
-                fontStyle: 'italic',
-                color: 'rgba(255, 255, 255, 0.65)',
-                textShadow: '0 2px 10px rgba(0,0,0,0.85)',
-                maxWidth: '900px',
-                marginTop: '0.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+                position: 'relative',
               }}
             >
-              Next: {displayedNext.replace(/\n/g, ' ')}
+              {/* Stylized Double Quotation Mark (Top Left) */}
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  marginBottom: '1.25rem',
+                  opacity: 0.9,
+                  marginLeft: '0.5rem',
+                }}
+              >
+                <svg width="46" height="38" viewBox="0 0 32 28" fill="#2d3139">
+                  <path d="M0 16.5C0 9.8 4.2 3.5 11.8 0L14 4.1C9.6 6.3 7.8 9.3 7.3 12.3H14V28H0V16.5ZM18 16.5C18 9.8 22.2 3.5 29.8 0L32 4.1C27.6 6.3 25.8 9.3 25.3 12.3H32V28H18V16.5Z" />
+                </svg>
+              </div>
+
+              {/* Italic Serif Scripture Verse Text */}
+              <div
+                style={{
+                  fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
+                  fontSize: `${effectiveFontSize}px`,
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                  color: '#ffffff',
+                  lineHeight: 1.5,
+                  letterSpacing: '-0.01em',
+                  textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 15px rgba(0, 0, 0, 0.8)',
+                  whiteSpace: 'pre-line',
+                  wordBreak: 'break-word',
+                  maxWidth: '1150px',
+                }}
+              >
+                {cleanVerseText}
+              </div>
+
+              {/* Flanked Scripture Citation Reference at Bottom */}
+              {citationRef && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '20px',
+                    marginTop: '2.5rem',
+                    width: '100%',
+                  }}
+                >
+                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.22)' }} />
+                  <span
+                    style={{
+                      fontFamily: 'Inter, Montserrat, sans-serif',
+                      fontSize: 'clamp(16px, 1.8vw, 22px)',
+                      fontWeight: 700,
+                      color: '#cbd5e1',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {citationRef}
+                  </span>
+                  <div style={{ width: '60px', height: '1px', background: 'rgba(255, 255, 255, 0.22)' }} />
+                </div>
+              )}
             </div>
+          ) : (
+            /* General Song / Hymn Slide Text */
+            <>
+              <div
+                style={{
+                  fontFamily: theme.fontFamily,
+                  fontSize: `${theme.fontSize}px`,
+                  fontWeight: theme.fontWeight,
+                  fontStyle: theme.fontStyle,
+                  textTransform: theme.textTransform,
+                  color: theme.textColor,
+                  lineHeight: theme.lineHeight,
+                  letterSpacing: `${theme.letterSpacing}px`,
+                  textShadow: combinedTextShadow,
+                  whiteSpace: 'pre-line',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {displayedLine}
+              </div>
+
+              {/* Next Slide Preview (Subtle Prompt for Congregation / Singer) */}
+              {theme.showNextPreview && displayedNext && (
+                <div
+                  style={{
+                    fontFamily: theme.fontFamily,
+                    fontSize: `${Math.round(theme.fontSize * 0.45)}px`,
+                    fontWeight: 500,
+                    fontStyle: 'italic',
+                    color: 'rgba(255, 255, 255, 0.65)',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.85)',
+                    maxWidth: '900px',
+                    marginTop: '1.5rem',
+                  }}
+                >
+                  Next: {displayedNext.replace(/\n/g, ' ')}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
     </div>
   );
 };
+

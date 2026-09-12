@@ -108,6 +108,11 @@ export const LiveConsole: React.FC<LiveConsoleProps> = ({
   // Compute live preview CSS style
   const theme = state.theme;
   const isPanic = state.liveState.isBlackout || state.liveState.isClearText || state.liveState.isLogo;
+  const isScriptureCategory =
+    state.category === 'scripture' ||
+    /\b(?:Genesis|Exodus|Leviticus|Numbers|Deuteronomy|Joshua|Judges|Ruth|Samuel|Kings|Chronicles|Ezra|Nehemiah|Esther|Job|Psalm|Psalms|Proverbs|Ecclesiastes|Song|Isaiah|Jeremiah|Lamentations|Ezekiel|Daniel|Hosea|Joel|Amos|Obadiah|Jonah|Micah|Nahum|Habakkuk|Zephaniah|Haggai|Zechariah|Malachi|Matthew|Mark|Luke|John|Acts|Romans|Corinthians|Galatians|Ephesians|Philippians|Colossians|Thessalonians|Timothy|Titus|Philemon|Hebrews|James|Peter|Jude|Revelation)\b/i.test(
+      state.title
+    );
 
   return (
     <main style={{
@@ -277,6 +282,42 @@ export const LiveConsole: React.FC<LiveConsoleProps> = ({
           ) : state.liveState.isClearText ? (
             <div style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '12px', fontStyle: 'italic' }}>
               (Text Cleared)
+            </div>
+          ) : isScriptureCategory ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '90%',
+              textAlign: 'center',
+            }}>
+              <div style={{ alignSelf: 'flex-start', marginBottom: '2px', opacity: 0.85 }}>
+                <svg width="18" height="14" viewBox="0 0 32 28" fill="#475569">
+                  <path d="M0 16.5C0 9.8 4.2 3.5 11.8 0L14 4.1C9.6 6.3 7.8 9.3 7.3 12.3H14V28H0V16.5ZM18 16.5C18 9.8 22.2 3.5 29.8 0L32 4.1C27.6 6.3 25.8 9.3 25.3 12.3H32V28H18V16.5Z" />
+                </svg>
+              </div>
+              <div style={{
+                fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
+                fontWeight: 600,
+                fontStyle: 'italic',
+                color: '#ffffff',
+                fontSize: '13px',
+                lineHeight: 1.4,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+              }}>
+                {state.lines[state.cur]?.replace(/^\d+[\s:.]\s+/, '').replace(/^["“](.*)["”]$/, '$1') || '(Empty slide)'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                <div style={{ width: '18px', height: '1px', background: 'rgba(255,255,255,0.3)' }} />
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#cbd5e1' }}>
+                  {state.title}
+                </span>
+                <div style={{ width: '18px', height: '1px', background: 'rgba(255,255,255,0.3)' }} />
+              </div>
             </div>
           ) : (
             <div style={{

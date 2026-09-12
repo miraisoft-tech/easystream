@@ -268,18 +268,12 @@ you anoint my head with oil; my cup overflows.
 Surely goodness and mercy shall follow me all the days of my life,
 and I shall dwell in the house of the LORD forever.`,
     lines: [
-      "The LORD is my shepherd; I shall not want.",
-      "He makes me lie down in green pastures.",
-      "He leads me beside still waters.",
-      "He restores my soul.",
-      "He leads me in paths of righteousness for his name's sake.",
-      "Even though I walk through the valley of the shadow of death,",
-      "I will fear no evil, for you are with me;",
-      "your rod and your staff, they comfort me.",
-      "You prepare a table before me in the presence of my enemies;",
-      "you anoint my head with oil; my cup overflows.",
-      "Surely goodness and mercy shall follow me all the days of my life,",
-      "and I shall dwell in the house of the LORD forever."
+      "The LORD is my shepherd; I shall not want.\n\nPsalm 23:1",
+      "He makes me lie down in green pastures. He leads me beside still waters.\n\nPsalm 23:2",
+      "He restores my soul. He leads me in paths of righteousness for his name's sake.\n\nPsalm 23:3",
+      "Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me.\n\nPsalm 23:4",
+      "You prepare a table before me in the presence of my enemies; you anoint my head with oil; my cup overflows.\n\nPsalm 23:5",
+      "Surely goodness and mercy shall follow me all the days of my life, and I shall dwell in the house of the LORD forever.\n\nPsalm 23:6"
     ],
     createdAt: Date.now() - 100000,
     updatedAt: Date.now() - 100000,
@@ -356,21 +350,15 @@ You never stop, You never stop working!`,
   },
   {
     id: 'john-3-16',
-    title: 'John 3:16-17',
+    title: 'John 3:16',
     category: 'scripture',
     author: 'Apostle John',
-    content: `For God so loved the world,
-that he gave his only begotten Son,
-that whosoever believeth in him should not perish,
-but have everlasting life.
+    content: `For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life.
 
-For God sent not his Son into the world to condemn the world;
-but that the world through him might be saved.`,
+For God sent not his Son into the world to condemn the world; but that the world through him might be saved.`,
     lines: [
-      "For God so loved the world, that he gave his only begotten Son,",
-      "that whosoever believeth in him should not perish, but have everlasting life.",
-      "For God sent not his Son into the world to condemn the world;",
-      "but that the world through him might be saved."
+      "For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life.\n\nJohn 3:16",
+      "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.\n\nJohn 3:17"
     ],
     createdAt: Date.now() - 70000,
     updatedAt: Date.now() - 70000,
@@ -411,24 +399,15 @@ Blessings all mine, with ten thousand beside!`,
     title: 'Philippians 4:6-8',
     category: 'scripture',
     author: 'Apostle Paul',
-    content: `Do not be anxious about anything,
-but in every situation, by prayer and petition, with thanksgiving,
-present your requests to God.
+    content: `Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.
 
-And the peace of God, which transcends all understanding,
-will guard your hearts and your minds in Christ Jesus.
+And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.
 
-Finally, brothers and sisters, whatever is true,
-whatever is noble, whatever is right, whatever is pure,
-whatever is lovely, whatever is admirable—
-if anything is excellent or praiseworthy—think about such things.`,
+Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure, whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things.`,
     lines: [
-      "Do not be anxious about anything, but in every situation,",
-      "by prayer and petition, with thanksgiving, present your requests to God.",
-      "And the peace of God, which transcends all understanding,",
-      "will guard your hearts and your minds in Christ Jesus.",
-      "Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure,",
-      "whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things."
+      "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.\n\nPhilippians 4:6",
+      "And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.\n\nPhilippians 4:7",
+      "Finally, brothers and sisters, whatever is true, whatever is noble, whatever is right, whatever is pure, whatever is lovely, whatever is admirable—if anything is excellent or praiseworthy—think about such things.\n\nPhilippians 4:8"
     ],
     createdAt: Date.now() - 50000,
     updatedAt: Date.now() - 50000,

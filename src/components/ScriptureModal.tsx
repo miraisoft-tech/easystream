@@ -53,16 +53,16 @@ const AVAILABLE_BIBLE_VERSIONS = [
 ];
 
 const POPULAR_SCRIPTURES = [
-  { label: 'John 3:16-17', query: 'John 3:16-17', tag: 'Salvation' },
-  { label: 'Psalm 23:1-6', query: 'Psalm 23:1-6', tag: 'Comfort' },
-  { label: 'Romans 8:28-39', query: 'Romans 8:28-39', tag: 'Assurance' },
-  { label: 'Philippians 4:6-8', query: 'Philippians 4:6-8', tag: 'Peace' },
-  { label: '1 Cor 13:4-8', query: '1 Cor 13:4-8', tag: 'Love' },
-  { label: 'Isaiah 40:29-31', query: 'Isaiah 40:29-31', tag: 'Strength' },
-  { label: 'Proverbs 3:5-6', query: 'Proverbs 3:5-6', tag: 'Trust' },
-  { label: 'Matthew 28:19-20', query: 'Matthew 28:19-20', tag: 'Commission' },
-  { label: 'Ephesians 6:10-18', query: 'Ephesians 6:10-18', tag: 'Armor' },
-  { label: 'Hebrews 11:1-6', query: 'Hebrews 11:1-6', tag: 'Faith' },
+  { label: 'John 3:16', query: 'John 3:16', tag: 'Salvation' },
+  { label: 'Psalm 23:1', query: 'Psalm 23:1', tag: 'Comfort' },
+  { label: 'Romans 8:28', query: 'Romans 8:28', tag: 'Assurance' },
+  { label: 'Philippians 4:6', query: 'Philippians 4:6', tag: 'Peace' },
+  { label: '1 Cor 13:4', query: '1 Cor 13:4', tag: 'Love' },
+  { label: 'Isaiah 40:31', query: 'Isaiah 40:31', tag: 'Strength' },
+  { label: 'Proverbs 3:5', query: 'Proverbs 3:5', tag: 'Trust' },
+  { label: 'Matthew 28:19', query: 'Matthew 28:19', tag: 'Commission' },
+  { label: 'Ephesians 6:10', query: 'Ephesians 6:10', tag: 'Armor' },
+  { label: 'Hebrews 11:1', query: 'Hebrews 11:1', tag: 'Faith' },
 ];
 
 interface ScriptureModalProps {
@@ -89,7 +89,7 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OnlineScriptureResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [splitMode, setSplitMode] = useState<'verse' | 'double' | 'full'>('full');
+  const [splitMode, setSplitMode] = useState<'verse' | 'double' | 'full'>('verse');
   const [includeReferenceOnSlide, setIncludeReferenceOnSlide] = useState(true);
 
   // Autocomplete suggestions
@@ -218,13 +218,16 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
     }
   };
 
-  // Convert raw verses to slides based on split mode
+  // Convert raw verses to slides based on split mode (Default: 1 verse per slide)
   const generatedSlides = useMemo(() => {
     if (!result || !result.verses || result.verses.length === 0) return [];
 
-    const refHeader = `${result.reference} (${result.version})`;
+    // Extract base book & chapter for single-verse citations (e.g. "John 3:16-17" -> "John 3")
+    const bookChapterMatch = result.reference.match(/^([\d\s]*[A-Za-z\s]+?\s*\d+)/);
+    const baseBookChapter = bookChapterMatch ? bookChapterMatch[1].trim() : result.reference;
 
     if (splitMode === 'full') {
+      const refHeader = `${result.reference}`;
       const text = result.verses.map(v => `${v.verse} ${v.text}`).join('\n\n');
       return [includeReferenceOnSlide ? `${text}\n\n${refHeader}` : text];
     }
@@ -233,16 +236,18 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
       const slides: string[] = [];
       for (let i = 0; i < result.verses.length; i += 2) {
         const pair = result.verses.slice(i, i + 2);
+        const pairRef = pair.length === 1 ? `${baseBookChapter}:${pair[0].verse}` : `${baseBookChapter}:${pair[0].verse}-${pair[1].verse}`;
         const text = pair.map(v => `${v.verse} ${v.text}`).join('\n\n');
-        slides.push(includeReferenceOnSlide ? `${text}\n\n${refHeader}` : text);
+        slides.push(includeReferenceOnSlide ? `${text}\n\n${pairRef}` : text);
       }
       return slides;
     }
 
-    // Default 'verse': 1 verse per slide
+    // Default 'verse': Exactly 1 verse per slide
     return result.verses.map(v => {
-      const text = `${v.verse} ${v.text}`;
-      return includeReferenceOnSlide ? `${text}\n\n${refHeader}` : text;
+      const cleanVerse = v.text.replace(/^\d+[\s:.]\s*/, '').trim();
+      const verseRef = result.verses.length === 1 ? result.reference : `${baseBookChapter}:${v.verse}`;
+      return includeReferenceOnSlide ? `${cleanVerse}\n\n${verseRef}` : cleanVerse;
     });
   }, [result, splitMode, includeReferenceOnSlide]);
 
