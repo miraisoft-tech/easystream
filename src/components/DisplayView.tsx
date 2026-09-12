@@ -294,6 +294,33 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
     }
   }
 
+  // Dynamic adaptive font scaling & line height based on scripture verse length
+  const verseLength = (cleanVerseText || '').length;
+  let dynamicScriptureFontSize = 'clamp(58px, 7.2vw, 102px)';
+  let dynamicLineHeight = 1.38;
+
+  if (verseLength < 65) {
+    // Ultra short verses (e.g. "Jesus wept.", "Rejoice always.")
+    dynamicScriptureFontSize = 'clamp(72px, 8.8vw, 124px)';
+    dynamicLineHeight = 1.32;
+  } else if (verseLength < 135) {
+    // Standard verse (e.g. John 3:16)
+    dynamicScriptureFontSize = 'clamp(58px, 7.2vw, 102px)';
+    dynamicLineHeight = 1.38;
+  } else if (verseLength < 215) {
+    // Moderate length verse
+    dynamicScriptureFontSize = 'clamp(48px, 5.8vw, 82px)';
+    dynamicLineHeight = 1.42;
+  } else if (verseLength < 320) {
+    // Long verse
+    dynamicScriptureFontSize = 'clamp(40px, 4.8vw, 66px)';
+    dynamicLineHeight = 1.45;
+  } else {
+    // Very long passage
+    dynamicScriptureFontSize = 'clamp(32px, 3.8vw, 52px)';
+    dynamicLineHeight = 1.48;
+  }
+
   const effectiveFontSize = isScriptureCategory
     ? Math.max(theme.fontSize, 58)
     : theme.fontSize;
@@ -624,7 +651,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
             }),
           }}
         >
-          {/* Scripture Specific Layout (Quotation Mark + Bigger Italic Serif + Flanked Reference + Next Preview) */}
+          {/* Scripture Specific Layout (Quotation Mark + Adaptive Italic Serif + Flanked Reference) */}
           {isScriptureCategory ? (
             <div
               style={{
@@ -649,15 +676,15 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                 </svg>
               </div>
 
-              {/* Extra-Large Italic Serif Scripture Verse Text */}
+              {/* Dynamic Auto-Adjusted Italic Serif Scripture Verse Text */}
               <div
                 style={{
                   fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
-                  fontSize: `clamp(58px, 7.2vw, 102px)`,
+                  fontSize: dynamicScriptureFontSize,
                   fontWeight: 600,
                   fontStyle: 'italic',
                   color: '#ffffff',
-                  lineHeight: 1.38,
+                  lineHeight: dynamicLineHeight,
                   letterSpacing: '-0.015em',
                   textShadow: combinedTextShadow !== 'none' ? combinedTextShadow : '0 2px 20px rgba(0, 0, 0, 0.9)',
                   whiteSpace: 'pre-line',
