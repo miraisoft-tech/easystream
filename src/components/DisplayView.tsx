@@ -654,7 +654,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
                 style={{
                   fontFamily: '"Playfair Display", "Merriweather", "Georgia", serif',
                   fontSize: `clamp(58px, 7.2vw, 102px)`,
-                  fontWeight: 800,
+                  fontWeight: 600,
                   fontStyle: 'italic',
                   color: '#ffffff',
                   lineHeight: 1.38,
