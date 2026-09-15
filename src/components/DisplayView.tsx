@@ -272,25 +272,37 @@ export const DisplayView: React.FC<DisplayViewProps> = ({
     cleanVerseText = cleanVerseText.replace(/^["“](.*)["”]$/, '$1').trim();
   }
 
-  // Compute next scripture preview
+  // Compute next scripture preview: only show next verse if it exists in the active scripture sequence, otherwise nothing
   let nextScripturePreview = '';
-  if (isScriptureCategory) {
-    if (displayedNext) {
-      const nextParts = displayedNext.split(/\n\s*\n/);
-      let nextText = nextParts[0].trim();
-      let nextRef = '';
-      if (nextParts.length > 1) {
-        nextRef = nextParts[nextParts.length - 1].replace(/^[—\-]\s*/, '').trim();
+  if (isScriptureCategory && displayedNext) {
+    const nextParts = displayedNext.split(/\n\s*\n/);
+    let nextText = nextParts.length > 1 ? nextParts.slice(0, -1).join(' ').trim() : nextParts[0].trim();
+    let nextRef = '';
+
+    if (nextParts.length > 1) {
+      const candidate = nextParts[nextParts.length - 1].replace(/^[—\-]\s*/, '').trim();
+      const looksLikeRef =
+        /^[1-3]?\s*[A-Za-z\s]+(?:\s+\d+(?::\d+(?:-\d+)?)?)?(?:\s*\([A-Z0-9]+\))?$/i.test(candidate) ||
+        candidate.startsWith('—') ||
+        candidate.startsWith('-');
+      if (looksLikeRef && candidate.length < 60) {
+        nextRef = candidate;
+      } else {
+        nextText = displayedNext.trim();
       }
-      nextText = nextText.replace(/^\d+[\s:.]\s*/, '').trim();
+    }
+
+    // Clean leading verse number if needed
+    nextText = nextText.replace(/^\d+[\s:.]\s*/, '').trim();
+    // Clean outer quotes
+    nextText = nextText.replace(/^["“](.*)["”]$/, '$1').trim();
+
+    if (nextText) {
       if (nextRef) {
         nextScripturePreview = `${nextRef} — "${nextText.length > 85 ? nextText.slice(0, 85) + '…' : nextText}"`;
       } else {
         nextScripturePreview = `"${nextText.length > 95 ? nextText.slice(0, 95) + '…' : nextText}"`;
       }
-    } else if (state.schedule && state.schedule[state.activeScheduleIndex + 1]) {
-      const nextItem = state.schedule[state.activeScheduleIndex + 1];
-      nextScripturePreview = `${nextItem.title}`;
     }
   }
 
