@@ -54,11 +54,11 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [installSuccessToast, setInstallSuccessToast] = useState(false);
+  // const [installSuccessToast, setInstallSuccessToast] = useState(false);
   const [alertText, setAlertText] = useState(liveState.quickAlert || '');
   const [now, setNow] = useState(Date.now());
 
-  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
+  // const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   useEffect(() => {
     if (timerState.status === 'running') {
@@ -295,7 +295,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right: Output Windows, Install App & Library Drawer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {/* PWA Install App Button */}
-        {isInstallable && (
+        {/* {isInstallable && (
           <button
             type="button"
             className="btn"
@@ -342,7 +342,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Check size={11} />
             Desktop App
           </div>
-        )}
+        )} */}
 
         <button 
           className="btn"
@@ -396,20 +396,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Layers size={13} />
             vMix
-            <ExternalLink size={11} style={{ opacity: 0.6 }} />
-          </a>
-
-          <a
-            href="/stage"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => openBorderlessWindow('/stage', 'easypresenter_stage', e)}
-            className="btn"
-            style={{ fontSize: '12px', padding: '6px 10px', textDecoration: 'none' }}
-            title="Open Stage Confidence Monitor for singers & speaker"
-          >
-            <Mic2 size={13} />
-            Stage
             <ExternalLink size={11} style={{ opacity: 0.6 }} />
           </a>
 

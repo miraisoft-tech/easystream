@@ -593,6 +593,33 @@ BIBLE_BOOKS.forEach(book => {
 });
 
 /**
+ * Fast helper to find the best BibleBook match for any query or abbreviation
+ */
+export function findBestBookMatch(input: string): BibleBook | null {
+  const clean = input.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!clean) return null;
+
+  // 1. Direct map lookup (exact book name or alias)
+  if (BIBLE_BOOK_MAP[clean]) {
+    return BIBLE_BOOK_MAP[clean];
+  }
+
+  // 2. Exact prefix match on canonical book name (e.g. "joh" -> "John", "ps" -> "Psalm", "1co" -> "1 Corinthians")
+  const exactPrefixBook = BIBLE_BOOKS.find(b => b.name.toLowerCase().startsWith(clean));
+  if (exactPrefixBook) return exactPrefixBook;
+
+  // 3. Exact prefix match on alias (e.g. "1co", "gen", "mat", "rom", "rev")
+  const exactPrefixAlias = BIBLE_BOOKS.find(b => b.aliases.some(a => a.toLowerCase().startsWith(clean)));
+  if (exactPrefixAlias) return exactPrefixAlias;
+
+  // 4. Word boundary match / includes match
+  const includesBook = BIBLE_BOOKS.find(b => b.name.toLowerCase().includes(clean));
+  if (includesBook) return includesBook;
+
+  return null;
+}
+
+/**
  * Generate contextual Bible autocomplete suggestions based on partial user input
  */
 export function getBibleSuggestions(
@@ -605,8 +632,8 @@ export function getBibleSuggestions(
   const lowerQuery = query.toLowerCase();
   const suggestions: BibleSuggestion[] = [];
 
-  // Stage 1: Try to parse if input has Book + Chapter (e.g. "John 3", "1 Cor 13", "Psalm 23")
-  const parsedMatch = query.match(/^([\d]?\s*[a-zA-Z\s]+?)\s*(\d+)(?:[:\s]+(\d+)(?:\s*[-–—]\s*(\d+)?)?)?$/);
+  // Stage 1: Try to parse if input has Book + Chapter (e.g. "John 3", "John 3:", "1 Cor 13", "Psalm 23")
+  const parsedMatch = query.match(/^([1-3]?\s*[a-zA-Z\s]+?)\s*(\d+)(?:\s*[:\s]\s*(\d+)?(?:\s*[-–—]\s*(\d+)?)?)?$/);
 
   if (parsedMatch) {
     const bookPrefix = parsedMatch[1].trim().toLowerCase().replace(/\s+/g, ' ');
@@ -615,8 +642,7 @@ export function getBibleSuggestions(
     const verseEnd = parsedMatch[4] ? parseInt(parsedMatch[4], 10) : null;
 
     // Look for matching book
-    const matchedBook = BIBLE_BOOK_MAP[bookPrefix] || 
-      BIBLE_BOOKS.find(b => b.name.toLowerCase().startsWith(bookPrefix) || b.aliases.some(a => a.startsWith(bookPrefix)));
+    const matchedBook = findBestBookMatch(bookPrefix);
 
     if (matchedBook) {
       const bName = matchedBook.name;
@@ -685,17 +711,8 @@ export function getBibleSuggestions(
         return suggestions.slice(0, 6);
       }
 
-      // User typed Book + Chapter (e.g. "John 3" or "Psalm 23")
-      // 1. Offer full chapter
-      suggestions.push({
-        text: `${bName} ${chapterNum}`,
-        type: 'chapter',
-        label: `${bName} ${chapterNum}`,
-        subLabel: `Whole Chapter (${matchedBook.chapters} total in ${bName})`,
-        badge: activeVersion,
-      });
-
-      // 2. Check if this book has popular verses in this chapter
+      // User typed Book + Chapter (e.g. "John 3" or "John 3:" or "Psalm 23")
+      // 1. Check if this book has popular verses in this chapter (e.g. John 3:16)
       const chapterPopular = matchedBook.popularVerses.filter(pv => pv.startsWith(`${bName} ${chapterNum}:`));
       chapterPopular.forEach(pv => {
         suggestions.push({
@@ -707,7 +724,7 @@ export function getBibleSuggestions(
         });
       });
 
-      // 3. Offer verse 1 starter
+      // 2. Offer verse 1 starter
       if (!chapterPopular.some(pv => pv.startsWith(`${bName} ${chapterNum}:1`))) {
         suggestions.push({
           text: `${bName} ${chapterNum}:1-5`,
@@ -716,7 +733,23 @@ export function getBibleSuggestions(
           subLabel: 'Passage Starter',
           badge: activeVersion,
         });
+        suggestions.push({
+          text: `${bName} ${chapterNum}:1`,
+          type: 'verse',
+          label: `${bName} ${chapterNum}:1`,
+          subLabel: 'Verse 1',
+          badge: activeVersion,
+        });
       }
+
+      // 3. Offer full chapter
+      suggestions.push({
+        text: `${bName} ${chapterNum}`,
+        type: 'chapter',
+        label: `${bName} ${chapterNum}`,
+        subLabel: `Whole Chapter (${matchedBook.chapters} total in ${bName})`,
+        badge: activeVersion,
+      });
 
       return suggestions.slice(0, 6);
     }
