@@ -39,6 +39,7 @@ interface OnlineScriptureResult {
   verses: OnlineScriptureVerse[];
   plainContent: string;
   totalVerses: number;
+  source?: "local" | "online" | "offline-fail";
 }
 
 const AVAILABLE_BIBLE_VERSIONS = [
@@ -1076,16 +1077,48 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
                   }}
                 >
                   <div>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: "18px",
-                        fontWeight: 800,
-                        color: "#f59e0b",
-                      }}
-                    >
-                      {result.reference}
-                    </h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: "18px",
+                          fontWeight: 800,
+                          color: "#f59e0b",
+                        }}
+                      >
+                        {result.reference}
+                      </h3>
+                      {result.source === "local" ? (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            padding: "2px 7px",
+                            background: "rgba(16, 185, 129, 0.18)",
+                            border: "1px solid rgba(16, 185, 129, 0.4)",
+                            color: "#34d399",
+                            borderRadius: "999px",
+                            fontWeight: 750,
+                            letterSpacing: "0.04em",
+                          }}
+                        >
+                          ⚡ LOCAL
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            padding: "2px 7px",
+                            background: "rgba(56, 189, 248, 0.15)",
+                            border: "1px solid rgba(56, 189, 248, 0.35)",
+                            color: "#38bdf8",
+                            borderRadius: "999px",
+                            fontWeight: 700,
+                          }}
+                        >
+                          🌐 ONLINE
+                        </span>
+                      )}
+                    </div>
                     <span style={{ fontSize: "12px", color: "#94a3b8" }}>
                       {result.versionName || result.version} •{" "}
                       {result.totalVerses} Verse

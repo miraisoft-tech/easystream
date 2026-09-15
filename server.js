@@ -845,6 +845,112 @@ function parseRefParts(ref) {
   return { bookStr, chapter, verseStart, verseEnd };
 }
 
+const BIBLES_DIR = path.join(DATA_DIR, "bibles");
+const BIBLE_CACHE_DIR = path.join(BIBLES_DIR, "cache");
+if (!fs.existsSync(BIBLES_DIR)) fs.mkdirSync(BIBLES_DIR, { recursive: true });
+if (!fs.existsSync(BIBLE_CACHE_DIR)) fs.mkdirSync(BIBLE_CACHE_DIR, { recursive: true });
+
+// In-memory cache of loaded full Bible translations
+const loadedBibles = new Map();
+
+function getLoadedBible(version) {
+  const code = (version || "KJV").toUpperCase();
+  if (loadedBibles.has(code)) return loadedBibles.get(code);
+
+  const filePath = path.join(BIBLES_DIR, `${code}.json`);
+  if (fs.existsSync(filePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      loadedBibles.set(code, data);
+      return data;
+    } catch (e) {
+      console.error(`Failed to parse local Bible ${code}.json:`, e.message);
+    }
+  }
+  return null;
+}
+
+// Get chapter verses from local full Bible or local cache
+function getLocalChapter(version, bookId, chapter) {
+  const code = (version || "KJV").toUpperCase();
+
+  // 1. Check full loaded Bible
+  const full = getLoadedBible(code);
+  if (
+    full &&
+    full.books &&
+    full.books[bookId] &&
+    full.books[bookId].chapters &&
+    full.books[bookId].chapters[chapter]
+  ) {
+    return full.books[bookId].chapters[chapter];
+  }
+
+  // 2. Check local chapter cache file
+  const cacheFile = path.join(BIBLE_CACHE_DIR, code, `${bookId}_${chapter}.json`);
+  if (fs.existsSync(cacheFile)) {
+    try {
+      return JSON.parse(fs.readFileSync(cacheFile, "utf-8"));
+    } catch {}
+  }
+
+  return null;
+}
+
+// Save chapter to local cache
+function saveLocalChapter(version, bookId, chapter, verses) {
+  if (!verses || !Array.isArray(verses) || verses.length === 0) return;
+  try {
+    const code = (version || "KJV").toUpperCase();
+    const dir = path.join(BIBLE_CACHE_DIR, code);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `${bookId}_${chapter}.json`);
+    fs.writeFileSync(file, JSON.stringify(verses), "utf-8");
+  } catch (e) {
+    console.error("Error saving local chapter cache:", e.message);
+  }
+}
+
+// Format local verses to standard response
+function formatLocalScriptureResult(version, bookInfo, refParts, chapterVerses) {
+  const { chapter, verseStart, verseEnd } = refParts;
+  const versionConfig = BIBLE_VERSIONS[version] || BIBLE_VERSIONS["KJV"];
+
+  let filtered = chapterVerses;
+  if (verseStart !== null && verseStart !== undefined) {
+    filtered = chapterVerses.filter(
+      (v) => v.verse >= verseStart && (verseEnd === null || v.verse <= verseEnd)
+    );
+  }
+
+  if (filtered.length === 0) {
+    return {
+      error: `Verse ${verseStart}${verseEnd && verseEnd !== verseStart ? `-${verseEnd}` : ""} was not found in ${bookInfo.name} ${chapter}. (${bookInfo.name} ${chapter} contains ${chapterVerses.length} verses in ${version}).`,
+      reference: `${bookInfo.name} ${chapter}`,
+      version,
+      source: "local",
+    };
+  }
+
+  const refString = `${bookInfo.name} ${chapter}:${
+    verseStart
+      ? verseEnd && verseEnd !== verseStart
+        ? `${verseStart}-${verseEnd}`
+        : verseStart
+      : `1-${chapterVerses.length}`
+  }`;
+
+  return {
+    reference: refString,
+    version,
+    versionName: versionConfig?.name || version,
+    verses: filtered,
+    plainContent: filtered.map((v) => `${v.verse} ${v.text}`).join("\n\n"),
+    totalVerses: filtered.length,
+    source: "local",
+  };
+}
+
 async function fetchFromBolls(version, bookInfo, refParts) {
   const { chapter, verseStart, verseEnd } = refParts;
   const versionConfig = BIBLE_VERSIONS[version] || BIBLE_VERSIONS["KJV"];
@@ -870,19 +976,8 @@ async function fetchFromBolls(version, bookInfo, refParts) {
     };
   }
 
-  let filtered = list;
-  if (verseStart !== null && verseStart !== undefined) {
-    filtered = list.filter((v) => v.verse >= verseStart && (verseEnd === null || v.verse <= verseEnd));
-  }
-
-  if (filtered.length === 0) {
-    return {
-      error: `Verse ${verseStart}${verseEnd && verseEnd !== verseStart ? `-${verseEnd}` : ""} was not found in ${bookInfo.name} ${chapter}. (${bookInfo.name} ${chapter} contains ${list.length} verses in ${version}).`,
-      version,
-    };
-  }
-
-  const verses = filtered.map((v) => {
+  // Extract and clean all verses of the chapter
+  const allVerses = list.map((v) => {
     let raw = v.text || "";
     if (raw.includes("<br/>")) {
       const parts = raw.split("<br/>");
@@ -899,15 +994,31 @@ async function fetchFromBolls(version, bookInfo, refParts) {
     };
   });
 
+  // Persist full chapter to local cache for instant future lookups
+  saveLocalChapter(version, bookInfo.id, chapter, allVerses);
+
+  let filtered = allVerses;
+  if (verseStart !== null && verseStart !== undefined) {
+    filtered = allVerses.filter((v) => v.verse >= verseStart && (verseEnd === null || v.verse <= verseEnd));
+  }
+
+  if (filtered.length === 0) {
+    return {
+      error: `Verse ${verseStart}${verseEnd && verseEnd !== verseStart ? `-${verseEnd}` : ""} was not found in ${bookInfo.name} ${chapter}. (${bookInfo.name} ${chapter} contains ${list.length} verses in ${version}).`,
+      version,
+    };
+  }
+
   const refString = `${bookInfo.name} ${chapter}:${verseStart ? (verseEnd && verseEnd !== verseStart ? `${verseStart}-${verseEnd}` : verseStart) : `1-${list.length}`}`;
 
   return {
     reference: refString,
     version,
     versionName: versionConfig.name,
-    verses,
-    plainContent: verses.map((v) => `${v.verse} ${v.text}`).join("\n\n"),
-    totalVerses: verses.length,
+    verses: filtered,
+    plainContent: filtered.map((v) => `${v.verse} ${v.text}`).join("\n\n"),
+    totalVerses: filtered.length,
+    source: "online",
   };
 }
 
@@ -1003,23 +1114,45 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Supported Bible Versions
-  if (pathname === "/api/scripture/versions") {
+  // Scripture Status & Available Local Datasets
+  if (pathname === "/api/scripture/status") {
+    const fullFiles = fs.existsSync(BIBLES_DIR)
+      ? fs.readdirSync(BIBLES_DIR).filter((f) => f.endsWith(".json"))
+      : [];
+    const localFullVersions = fullFiles.map((f) => path.basename(f, ".json"));
+
+    const cachedVersions = {};
+    let totalCachedChapters = 0;
+
+    if (fs.existsSync(BIBLE_CACHE_DIR)) {
+      const verDirs = fs.readdirSync(BIBLE_CACHE_DIR);
+      for (const vd of verDirs) {
+        const fullDir = path.join(BIBLE_CACHE_DIR, vd);
+        if (fs.statSync(fullDir).isDirectory()) {
+          const chFiles = fs.readdirSync(fullDir).filter((f) => f.endsWith(".json"));
+          cachedVersions[vd] = chFiles.length;
+          totalCachedChapters += chFiles.length;
+        }
+      }
+    }
+
     res.writeHead(200, {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     });
-    res.end(JSON.stringify({
-      versions: Object.entries(BIBLE_VERSIONS).map(([key, val]) => ({
-        id: key,
-        name: val.name,
-      })),
-      default: "KJV",
-    }));
+    res.end(
+      JSON.stringify({
+        status: "ok",
+        localFullVersions,
+        cachedVersions,
+        totalCachedChapters,
+        totalConfiguredVersions: Object.keys(BIBLE_VERSIONS).length,
+      })
+    );
     return;
   }
 
-  // Online Scripture Search Proxy Endpoint
+  // Local-First Scripture Search Resolver (Tier 1: Local / Cache -> Tier 2: Online Fallback)
   if (pathname === "/api/scripture/search") {
     const rawQuery = (parsedUrl.searchParams.get("q") || "").trim();
     const dropdownVersion = (parsedUrl.searchParams.get("version") || "KJV").trim().toUpperCase();
@@ -1033,7 +1166,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Step 1: Detect trailing Bible version in the query if user typed e.g. "john 2:30 KJV" or "romans 8:28 NIV"
+    // Step 1: Detect trailing Bible version in query (e.g. "john 3:16 KJV", "romans 8:28 NIV")
     const versionKeys = Object.keys(BIBLE_VERSIONS);
     const versionRegex = new RegExp(`[\\s,\\(-]+(${versionKeys.join("|")})[\\)\\s]*$`, "i");
 
@@ -1065,7 +1198,7 @@ const server = http.createServer((req, res) => {
 
     if (!refParts || !refParts.chapter) {
       sendJson(200, {
-        error: `Please include a chapter number to search online (e.g. "${cleanRef} 1" or "${cleanRef} 3:16").`,
+        error: `Please include a chapter number (e.g. "${cleanRef} 1" or "${cleanRef} 3:16").`,
         reference: cleanRef,
         version,
       });
@@ -1075,33 +1208,53 @@ const server = http.createServer((req, res) => {
     const bookInfo = findBibleBook(refParts.bookStr);
     const versionConfig = BIBLE_VERSIONS[version] || BIBLE_VERSIONS["KJV"];
 
-    // If version is on bible-api.com (KJV, WEB, ASV, BBE, DARBY, DRA, YLT)
+    if (!bookInfo) {
+      sendJson(200, {
+        error: `Could not parse scripture book in "${cleanRef}". Examples: "John 3:16", "Romans 8:28-39", "Psalm 23:1-6".`,
+        reference: cleanRef,
+        version,
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // TIER 1: Check Local Storage & Local Cache First
+    // -------------------------------------------------------------
+    const localVerses = getLocalChapter(version, bookInfo.id, refParts.chapter);
+    if (localVerses && Array.isArray(localVerses) && localVerses.length > 0) {
+      const localResult = formatLocalScriptureResult(version, bookInfo, refParts, localVerses);
+      sendJson(200, localResult);
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // TIER 2: Online Fallback Provider (bible-api.com or bolls.life)
+    // -------------------------------------------------------------
+    // A. If version is configured with bible-api.com (KJV, WEB, ASV, BBE, DARBY, DRA, YLT)
     if (versionConfig.provider === "bible-api") {
       const targetUrl = `https://bible-api.com/${encodeURIComponent(cleanRef)}?translation=${versionConfig.id}`;
       fetch(targetUrl, {
-        headers: { "User-Agent": "EasyPresenterStudio/2.0 (https://github.com/EasyPresenter)" }
+        headers: { "User-Agent": "EasyPresenterStudio/2.0 (https://github.com/EasyPresenter)" },
+        signal: AbortSignal.timeout(6000),
       })
         .then((r) => r.json())
         .then((data) => {
           if (data.error || !data.verses || data.verses.length === 0) {
-            // If bible-api couldn't find it, attempt fallback to bolls if bookInfo is known
-            if (bookInfo && refParts) {
-              return fetchFromBolls(version, bookInfo, refParts).then((bollsResult) => {
-                sendJson(200, bollsResult);
-              });
-            }
-            sendJson(200, {
-              error: `Scripture reference "${cleanRef}" was not found in ${version}. Please check the book, chapter, and verse range.`,
-              reference: cleanRef,
-              version,
+            // Attempt fallback to bolls if bible-api fails
+            return fetchFromBolls(version, bookInfo, refParts).then((bollsResult) => {
+              sendJson(200, bollsResult);
             });
-            return;
           }
 
           const verses = data.verses.map((v) => ({
             verse: v.verse,
             text: (v.text || "").replace(/\s+/g, " ").trim(),
           }));
+
+          // If entire chapter was fetched, cache it
+          if (refParts.verseStart === null || verses.length > 15) {
+            saveLocalChapter(version, bookInfo.id, refParts.chapter, verses);
+          }
 
           const canonicalRef = data.reference || cleanRef;
           sendJson(200, {
@@ -1111,48 +1264,41 @@ const server = http.createServer((req, res) => {
             verses,
             plainContent: verses.map((v) => `${v.verse} ${v.text}`).join("\n\n"),
             totalVerses: verses.length,
+            source: "online",
           });
         })
         .catch(async (err) => {
           console.error("bible-api fetch error:", err.message);
-          if (bookInfo && refParts) {
-            try {
-              const bollsResult = await fetchFromBolls(version, bookInfo, refParts);
-              if (!bollsResult.error) {
-                sendJson(200, bollsResult);
-                return;
-              }
-            } catch (e) {}
-          }
+          try {
+            const bollsResult = await fetchFromBolls(version, bookInfo, refParts);
+            if (!bollsResult.error) {
+              sendJson(200, bollsResult);
+              return;
+            }
+          } catch (e) {}
+
           sendJson(200, {
-            error: `Failed to query scripture provider: ${err.message}`,
+            error: `Scripture lookup failed for "${cleanRef}" (${version}): ${err.message}. Please verify the reference or download Bible versions for offline use.`,
             reference: cleanRef,
             version,
+            source: "offline-fail",
           });
         });
       return;
     }
 
-    // Modern translations via bolls.life (NIV, ESV, NKJV, NASB, NLT, AMP, RSV, MSG, etc.)
-    if (bookInfo && refParts) {
-      fetchFromBolls(version, bookInfo, refParts)
-        .then((result) => sendJson(200, result))
-        .catch((err) => {
-          console.error("bolls.life fetch error:", err.message);
-          sendJson(200, {
-            error: `Failed to retrieve ${cleanRef} in ${version}: ${err.message}`,
-            reference: cleanRef,
-            version,
-          });
+    // B. Modern translations via bolls.life (NIV, ESV, NKJV, NASB, NLT, AMP, RSV, MSG, etc.)
+    fetchFromBolls(version, bookInfo, refParts)
+      .then((result) => sendJson(200, result))
+      .catch((err) => {
+        console.error("bolls.life fetch error:", err.message);
+        sendJson(200, {
+          error: `Could not retrieve ${cleanRef} in ${version}: ${err.message}. Please check connection or verify the reference.`,
+          reference: cleanRef,
+          version,
+          source: "offline-fail",
         });
-      return;
-    }
-
-    sendJson(200, {
-      error: `Could not parse scripture reference "${cleanRef}". Examples: "John 3:16", "Romans 8:28-39", "Psalm 23:1-6".`,
-      reference: cleanRef,
-      version,
-    });
+      });
     return;
   }
 

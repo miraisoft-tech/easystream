@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
-    "serve": "npm run build && node server.js"
+    "serve": "npm run build && node server.js",
+    "download:bibles": "node scripts/download-bibles.js"
   },
   "engines": {
     "node": ">=20"
