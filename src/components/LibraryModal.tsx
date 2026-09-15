@@ -25,6 +25,7 @@ interface LibraryModalProps {
   onAddToSchedule: (item: LibraryItem) => void;
   onGoLiveWithItem: (item: LibraryItem) => void;
   onOpenOnlineSearch?: () => void;
+  onOpenScriptures?: () => void;
 }
 
 export const LibraryModal: React.FC<LibraryModalProps> = ({
@@ -36,6 +37,7 @@ export const LibraryModal: React.FC<LibraryModalProps> = ({
   onAddToSchedule,
   onGoLiveWithItem,
   onOpenOnlineSearch,
+  onOpenScriptures,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -173,7 +175,22 @@ export const LibraryModal: React.FC<LibraryModalProps> = ({
                     onClick={onOpenOnlineSearch}
                     title="Search online lyric databases"
                   >
-                    <Globe size={13} /> Search Online
+                    <Globe size={13} /> Search Lyrics
+                  </button>
+                )}
+                {onOpenScriptures && (
+                  <button 
+                    className="btn"
+                    style={{
+                      fontSize: '12px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      borderColor: 'rgba(16, 185, 129, 0.3)',
+                    }}
+                    onClick={onOpenScriptures}
+                    title="Quick Scripture Search & Bible Presenter"
+                  >
+                    <BookOpen size={13} /> Scripture
                   </button>
                 )}
                 <button className="btn btn-primary" style={{ fontSize: '12px' }} onClick={handleStartCreate}>

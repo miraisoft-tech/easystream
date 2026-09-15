@@ -187,6 +187,10 @@ export const App: React.FC = () => {
           setIsLibraryOpen(false);
           setIsOnlineSearchOpen(true);
         }}
+        onOpenScriptures={() => {
+          setIsLibraryOpen(false);
+          setIsScriptureOpen(true);
+        }}
       />
 
       {/* Online Lyrics Search & Instant Auto-Save Modal */}

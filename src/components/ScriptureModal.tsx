@@ -156,7 +156,7 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
   };
 
   // Search API execution
-  const executeSearch = async (searchQuery: string, versionId = selectedVersion) => {
+  const executeSearch = async (searchQuery: string, versionOverride?: string) => {
     const raw = searchQuery.trim();
     setShowSuggestions(false);
     if (!raw) {
@@ -174,12 +174,27 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
       return;
     }
 
+    // Check if query contains an embedded Bible version (e.g. "john 3:16 NIV", "romans 8:28 KJV")
+    const versionCodes = AVAILABLE_BIBLE_VERSIONS.map(v => v.id);
+    const versionRegex = new RegExp(`[\\s,\\(-]+(${versionCodes.join('|')})[\\)\\s]*$`, 'i');
+    const match = raw.match(versionRegex);
+
+    let activeVersion = versionOverride || selectedVersion;
+    if (match) {
+      const detected = match[1].toUpperCase();
+      const validVer = AVAILABLE_BIBLE_VERSIONS.find(v => v.id.toUpperCase() === detected);
+      if (validVer) {
+        activeVersion = validVer.id;
+        setSelectedVersion(validVer.id);
+      }
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
-      const url = `${apiBase}/api/scripture/search?q=${encodeURIComponent(raw)}&version=${encodeURIComponent(versionId)}`;
+      const url = `${apiBase}/api/scripture/search?q=${encodeURIComponent(raw)}&version=${encodeURIComponent(activeVersion)}`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -190,7 +205,7 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
         setResult(data);
         setError(null);
       } else {
-        setError(`No verses found for "${raw}" in ${versionId}.`);
+        setError(`No verses found for "${raw}" in ${activeVersion}.`);
         setResult(null);
       }
     } catch (err: any) {
@@ -446,13 +461,43 @@ export const ScriptureModal: React.FC<ScriptureModalProps> = ({
                       setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
                       return;
                     }
-                    if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
+                    if (e.key === 'Tab') {
                       e.preventDefault();
-                      handleSelectSuggestion(suggestions[activeSuggestionIndex]);
+                      const target = activeSuggestionIndex >= 0 ? suggestions[activeSuggestionIndex] : suggestions[0];
+                      if (target) {
+                        handleSelectSuggestion(target);
+                      }
                       return;
                     }
-                  }
-                  if (e.key === 'Enter') {
+                    if (e.key === ' ') {
+                      if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+                        e.preventDefault();
+                        handleSelectSuggestion(suggestions[activeSuggestionIndex]);
+                        return;
+                      }
+                      const topSug = suggestions[0];
+                      if (topSug && topSug.type === 'book' && !query.includes(' ')) {
+                        e.preventDefault();
+                        setQuery(`${topSug.text} `);
+                        setActiveSuggestionIndex(-1);
+                        return;
+                      }
+                    }
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+                        handleSelectSuggestion(suggestions[activeSuggestionIndex]);
+                      } else {
+                        setShowSuggestions(false);
+                        executeSearch(query, selectedVersion);
+                      }
+                      return;
+                    }
+                    if (e.key === 'Escape') {
+                      setShowSuggestions(false);
+                      return;
+                    }
+                  } else if (e.key === 'Enter') {
                     e.preventDefault();
                     executeSearch(query, selectedVersion);
                   }

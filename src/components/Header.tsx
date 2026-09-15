@@ -356,12 +356,11 @@ export const Header: React.FC<HeaderProps> = ({
             gap: '6px',
           }}
           onClick={onOpenOnlineSearch}
-          title="Search song lyrics and media online"
+          title="Search song lyrics and worship songs online"
         >
           <Search size={13} />
           Search Lyrics
         </button>
-
         <button 
           className="btn"
           style={{ fontSize: '12px', padding: '6px 12px', background: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
