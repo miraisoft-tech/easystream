@@ -82,20 +82,21 @@ export const BIBLE_BOOKS = [
 ];
 
 export const TARGET_VERSIONS = [
-  { code: "KJV", bollsCode: "KJV", name: "King James Version" },
-  { code: "WEB", bollsCode: "WEB", name: "World English Bible" },
-  { code: "NIV", bollsCode: "NIV", name: "New International Version" },
-  { code: "NKJV", bollsCode: "NKJV", name: "New King James Version" },
-  { code: "ESV", bollsCode: "ESV", name: "English Standard Version" },
-  { code: "NLT", bollsCode: "NLT", name: "New Living Translation" },
-  { code: "NASB", bollsCode: "NASB", name: "New American Standard Bible" },
-  { code: "ASV", bollsCode: "ASV", name: "American Standard Version" },
-  { code: "BBE", bollsCode: "BBE", name: "Bible in Basic English" },
-  { code: "DARBY", bollsCode: "DARBY", name: "Darby Bible" },
-  { code: "YLT", bollsCode: "YLT", name: "Young's Literal Translation" },
-  { code: "AMP", bollsCode: "AMP", name: "Amplified Bible" },
-  { code: "RSV", bollsCode: "RSV", name: "Revised Standard Version" },
-  { code: "MSG", bollsCode: "MSG", name: "The Message" }
+  { code: "KJV", bollsCode: "KJV", name: "King James Version", provider: "bolls" },
+  { code: "WEB", bollsCode: "WEB", name: "World English Bible", provider: "bolls" },
+  { code: "NIV", bollsCode: "NIV", name: "New International Version", provider: "bolls" },
+  { code: "NKJV", bollsCode: "NKJV", name: "New King James Version", provider: "bolls" },
+  { code: "ESV", bollsCode: "ESV", name: "English Standard Version", provider: "bolls" },
+  { code: "NLT", bollsCode: "NLT", name: "New Living Translation", provider: "bolls" },
+  { code: "NASB", bollsCode: "NASB", name: "New American Standard Bible", provider: "bolls" },
+  { code: "ASV", bollsCode: "ASV", name: "American Standard Version", provider: "bolls" },
+  { code: "BBE", bollsCode: "bbe", name: "Bible in Basic English", provider: "bible-api" },
+  { code: "DARBY", bollsCode: "darby", name: "Darby Bible", provider: "bible-api" },
+  { code: "DRA", bollsCode: "dra", name: "Douay-Rheims", provider: "bible-api" },
+  { code: "YLT", bollsCode: "YLT", name: "Young's Literal Translation", provider: "bolls" },
+  { code: "AMP", bollsCode: "AMP", name: "Amplified Bible", provider: "bolls" },
+  { code: "RSV", bollsCode: "RSV", name: "Revised Standard Version", provider: "bolls" },
+  { code: "MSG", bollsCode: "MSG", name: "The Message", provider: "bolls" }
 ];
 
 async function sleep(ms) {
@@ -147,13 +148,19 @@ async function downloadVersion(ver) {
             let retries = 3;
             while (retries > 0 && !verses) {
               try {
-                const url = `https://bolls.life/get-chapter/${ver.bollsCode}/${book.id}/${ch}/`;
+                let url;
+                if (ver.provider === "bible-api") {
+                  url = `https://bible-api.com/${encodeURIComponent(book.name)}%20${ch}?translation=${ver.bollsCode.toLowerCase()}`;
+                } else {
+                  url = `https://bolls.life/get-chapter/${ver.bollsCode}/${book.id}/${ch}/`;
+                }
                 const res = await fetch(url, {
                   headers: { "User-Agent": "EasyPresenterStudio/2.0" },
                   signal: AbortSignal.timeout(8000),
                 });
                 if (res.ok) {
-                  const list = await res.json();
+                  const data = await res.json();
+                  const list = Array.isArray(data) ? data : (data.verses || []);
                   if (Array.isArray(list) && list.length > 0) {
                     verses = list.map((v) => {
                       let raw = v.text || "";
